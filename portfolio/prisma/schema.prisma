@@ -1,0 +1,114 @@
+// Portfolio content model. Every list-type section has an integer `order` column that the admin
+// drag-and-drop writes to, so ordering is data, not code.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Neon: DATABASE_URL is the pooled connection (used at runtime),
+  // DIRECT_URL is the direct connection (used by `prisma migrate`).
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Single-row table (id is always 1) for the hero and about content.
+model Profile {
+  id           Int      @id @default(1)
+  name         String
+  role         String
+  headline     String
+  location     String
+  availability String
+  bio          String[]
+  /// [{ label, value }]
+  facts        Json
+  /// [{ title, text }]
+  highlights   Json
+  updatedAt    DateTime @updatedAt
+}
+
+model ContactLink {
+  id        String   @id @default(cuid())
+  type      String // email | phone | whatsapp | linkedin | github
+  value     String
+  order     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Experience {
+  id           String   @id @default(cuid())
+  role         String
+  organisation String
+  period       String
+  location     String
+  bullets      String[]
+  stack        String[]
+  order        Int      @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model Project {
+  id         String   @id @default(cuid())
+  title      String
+  summary    String
+  role       String
+  highlights String[]
+  stack      String[]
+  /// Case study (all optional). The card shows a "Case study" button only when at least one is filled in.
+  challenge  String?
+  approach   String[] @default([])
+  outcome    String?
+  order      Int      @default(0)
+  updatedAt  DateTime @updatedAt
+}
+
+model SkillGroup {
+  id        String   @id @default(cuid())
+  name      String
+  skills    String[]
+  order     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Education {
+  id          String   @id @default(cuid())
+  degree      String
+  institution String
+  period      String
+  description String?
+  order       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+/// Single-row table (id is always 1): heading and story text for the "Path into Automation" section.
+model JourneyIntro {
+  id        Int      @id @default(1)
+  heading   String
+  story     String[]
+  updatedAt DateTime @updatedAt
+}
+
+model JourneyMilestone {
+  id          String   @id @default(cuid())
+  title       String
+  period      String
+  description String
+  tags        String[]
+  /// done | current | next
+  status      String   @default("done")
+  order       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+/// Resume files uploaded from /admin. `kind` is "pdf" or "docx", so at most one of each exists.
+/// Stored as bytes in Postgres: files are small (capped at 3 MB), which avoids needing a separate storage service.
+model ResumeFile {
+  kind      String   @id
+  filename  String
+  mime      String
+  size      Int
+  data      Bytes
+  updatedAt DateTime @updatedAt
+}

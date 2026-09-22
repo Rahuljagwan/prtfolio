@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rahul Jagwan - Software Engineer Resume</title>
+<style>
+  @page { size: A4; margin: 10mm 13mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; font-size: 9.5pt; line-height: 1.24; color: #111; margin: 0; }
+  h1 { font-size: 21pt; margin: 0; letter-spacing: .3px; text-align: center; }
+  .title { text-align: center; font-size: 10.5pt; color: #1f3a5f; font-weight: 600; margin: 1px 0 2px; }
+  .contact { text-align: center; font-size: 9.5pt; margin-bottom: 4px; }
+  .contact a { color: #111; text-decoration: none; }
+  h2 { font-size: 10.5pt; text-transform: uppercase; letter-spacing: 1px; color: #1f3a5f; border-bottom: 1.2px solid #1f3a5f; margin: 9px 0 3px; padding-bottom: 1px; break-after: avoid; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .row b { font-size: 10.3pt; }
+  .date { font-size: 9.5pt; color: #333; white-space: nowrap; }
+  .sub { font-style: italic; color: #333; font-size: 9.5pt; }
+  ul { margin: 2px 0 3px 16px; padding: 0; }
+  li { margin-bottom: 1px; }
+  .skills div { margin-bottom: 1.5px; }
+  .skills b { display: inline-block; min-width: 118px; }
+  p { margin: 2px 0; }
+  .proj { margin-bottom: 3px; break-inside: avoid; }
+  .stack, .learn { font-size: 9.2pt; margin: 1px 0; }
+  .stack b, .learn b { color: #1f3a5f; }
+</style>
+</head>
+<body>
+
+<h1>Rahul Rajendra Singh Jagwan</h1>
+<div class="title">Software Engineer | Full Stack &amp; Backend Development | Python, Flask, Node.js, React | Linux &amp; Deployment</div>
+<div class="contact">
+  Mumbai, Maharashtra, India | +91-XXXXXXXXXX | your.email@example.com |
+  <a href="https://www.linkedin.com/in/YOUR-LINKEDIN">linkedin.com/in/YOUR-LINKEDIN</a> |
+  <a href="https://github.com/YOUR-GITHUB">github.com/YOUR-GITHUB</a>
+</div>
+
+<h2>Professional Summary</h2>
+<p>Software Engineer at SBFC Finance Limited with hands-on experience building internal enterprise web applications from development to deployment. Works across React frontends, Flask and Node.js backends, MySQL and PostgreSQL databases, and Linux server hosting with Nginx. Has practical experience with role-based access control, approval workflows, scheduled background jobs, secure session handling, and automated testing. Seeking backend, full stack or DevOps-oriented software engineering roles.</p>
+
+<h2>Technical Skills</h2>
+<div class="skills">
+  <div><b>Languages</b> Python, JavaScript (ES6+), TypeScript, Java, C++, SQL</div>
+  <div><b>Backend</b> Flask, Node.js, Express.js, REST APIs, WebSockets, JWT authentication, Role-Based Access Control (RBAC), SQLAlchemy, Swagger / OpenAPI, Strapi</div>
+  <div><b>Frontend</b> React.js, Next.js, Redux Toolkit, RTK Query, HTML5, CSS3, Bootstrap, Tailwind CSS, Material UI, Shadcn, Progressive Web Apps (PWA)</div>
+  <div><b>Databases</b> MySQL, PostgreSQL, MongoDB, Redis, Firebase</div>
+  <div><b>Cloud &amp; DevOps</b> Linux, Nginx, Gunicorn, PM2, systemd, Docker, Docker Compose, Git, GitHub, Cron Jobs, Amazon S3, AWS Bedrock, server configuration and deployment</div>
+  <div><b>Testing &amp; Security</b> Playwright, pytest, Postman, debugging and troubleshooting, session management, rate limiting, XSS / CSRF / IDOR remediation, VAPT findings closure</div>
+  <div><b>Practices</b> SDLC, Agile collaboration, SIT / UAT support, technical documentation, cross-functional teamwork</div>
+</div>
+
+<h2>Professional Experience</h2>
+<div class="row"><b>Software Engineer &ndash; SBFC Finance Limited</b><span class="date">Dec 2025 &ndash; Present</span></div>
+<div class="sub">Mumbai, Maharashtra, India (On-site, Full-time)</div>
+<ul>
+  <li>Develop and maintain full stack web applications across frontend and backend systems to support business requirements, including asset management, compliance training, legal notice management and branch operations.</li>
+  <li>Manage application deployment, server hosting, configuration and performance optimization using Linux, Nginx, PM2, Gunicorn, systemd, cron jobs, WebSockets, PWA features, secure remote server management and Amazon S3.</li>
+  <li>Implement role-based access control, session timeouts, account lockout, password policies and rate limiting, and work on closing security review findings such as XSS, CSRF and insecure direct object references.</li>
+  <li>Contribute to testing, debugging, troubleshooting and improving application stability and reliability using Playwright and pytest; support SIT and UAT cycles and prepare handover and rollback documentation.</li>
+</ul>
+
+<h2>Projects</h2>
+
+<div class="proj">
+<div class="row"><b>Admin Portal (Saarthi Platform)</b><span class="date">SBFC Finance Limited</span></div>
+<div class="stack"><b>Tech used:</b> Flask, Flask-RESTX (Swagger), SQLAlchemy, MySQL, React, Vite, Tailwind CSS, Amazon S3, Gunicorn</div>
+<ul>
+  <li>Worked on an internal branch operations portal covering branch creation with approval workflow, quotation management, lease and asset trackers, and compliance and bullion modules.</li>
+  <li>Built an expiry and renewal notification engine with scheduled daily generation, email delivery, job locking and duplicate prevention, with pytest coverage for the notification logic.</li>
+  <li>Applied scope-based data access, single-session control and token-based email approvals to keep access restricted to the right users and branches.</li>
+</ul>
+<div class="learn"><b>Key learnings:</b> Learned to keep a large codebase organised and to run daily jobs safely, so users never get duplicate notifications. Also learned to write tests for business rules.</div>
+</div>
+
+<div class="proj">
+<div class="row"><b>InfraDesk &ndash; IT Asset Request and Approval System</b><span class="date">SBFC Finance Limited</span></div>
+<div class="stack"><b>Tech used:</b> Flask, MySQL, Redis, Flask-SocketIO, Flask-Limiter, React, Tailwind CSS, Amazon S3, Gunicorn, systemd</div>
+<ul>
+  <li>Built a multi-stage approval workflow (Manager, IT, Admin Dispatch) for new asset requests, transfers, allocations, replacements and handovers, with secure approve / reject links sent by email.</li>
+  <li>Implemented multi-role access control with role switching, per-role rate limits, idle and absolute session timeouts and server-side session invalidation; also added an SLA escalation script and a user access management module with audit tables.</li>
+  <li>Integrated the company HR system API for employee data and deployed the backend as a systemd-managed Gunicorn service.</li>
+</ul>
+<div class="learn"><b>Key learnings:</b> Learned how to design approval flows with several stages, keep email approval links safe, and manage user sessions securely.</div>
+</div>
+
+<div class="proj">
+<div class="row"><b>Soochna &ndash; Legal Notice Management System</b><span class="date">SBFC Finance Limited</span></div>
+<div class="stack"><b>Tech used:</b> Node.js, Express, TypeScript, PostgreSQL, Zod, JWT, React, Vite, Tailwind CSS, Docker, Nginx, Amazon S3</div>
+<ul>
+  <li>Built a notice lifecycle system covering intake, owner assignment, SLA reminders, overdue alerts, a multi-level escalation chain, closure approval and a full audit trail, using a PostgreSQL schema split by domain (auth, master, workflow, transaction).</li>
+  <li>Designed a data-driven, deny-by-default permission model with role rights stored in the database, and added an hourly SLA sweep job.</li>
+  <li>Addressed security review findings: file validation by content, object-level authorization checks, CSRF protection, input sanitization against stored XSS and security headers. Wrote automated tests with the Node test runner and a Postman collection.</li>
+</ul>
+<div class="learn"><b>Key learnings:</b> Learned to build a secure system end to end, from database design to deployment, and to fix issues found in security reviews.</div>
+</div>
+
+<div class="proj">
+<div class="row"><b>Sakshar &ndash; Compliance Training Platform</b><span class="date">SBFC Finance Limited</span></div>
+<div class="stack"><b>Tech used:</b> Flask, SQLAlchemy, MySQL, Flask-JWT-Extended, APScheduler, ReportLab, Amazon S3, AWS Bedrock, React, Recharts</div>
+<ul>
+  <li>Developed a platform where admins assign training modules to employees, who complete videos and quizzes and receive PDF certificates.</li>
+  <li>Added bulk module upload and assignment, recurring reassignment, a daily reminder job, admin dashboards and audit export.</li>
+  <li>Implemented password history, account lockout and single active session per user; integrated an AWS Bedrock agent to generate quiz questions.</li>
+</ul>
+<div class="learn"><b>Key learnings:</b> Learned to run scheduled jobs, generate PDF certificates, store files on cloud storage and use an AI service inside an application.</div>
+</div>
+
+<div class="proj">
+<div class="row"><b>Print Tracker &ndash; Print Usage Analytics Dashboard</b><span class="date">SBFC Finance Limited</span></div>
+<div class="stack"><b>Tech used:</b> Flask, PostgreSQL (psycopg connection pool), Redis, React, Vite, Recharts, Docker, Gunicorn, systemd</div>
+<ul>
+  <li>Built APIs and a dashboard showing print volume, per-user and per-printer usage, top users and usage trends from print log data.</li>
+  <li>Added a Redis response cache with an in-memory fallback and per-endpoint expiry times, cursor-based pagination and database indexes to keep dashboard queries responsive.</li>
+</ul>
+<div class="learn"><b>Key learnings:</b> Learned how to make dashboards load faster using caching and database indexes, and how to package an app with Docker.</div>
+</div>
+
+<div class="proj">
+<div class="row"><b>Freelance Projects: DellCube, JMD, CVEarity</b><span class="date">Freelance</span></div>
+<div class="stack"><b>Tech used:</b> MongoDB, Express, React.js, Node.js, Redux Toolkit, RTK Query, Cloudinary, Tailwind CSS</div>
+<ul>
+  <li>DellCube: built the Goods Management module of a logistics platform with CRUD, dynamic item masters, server-side pagination, debounced search and detail drawers.</li>
+  <li>JMD: built a role-based dashboard for shop owners covering order booking, employee management, salary, stock handling and analytics widgets.</li>
+  <li>CVEarity: built a role-based dashboard for CVE management with log viewing, search, sort and filtering by severity.</li>
+</ul>
+</div>
+
+<h2>Education</h2>
+<div class="row"><b>Universal College of Engineering, Mumbai</b><span class="date">2021 &ndash; 2025</span></div>
+<div class="sub">Bachelor of Engineering in Computer Science | CGPA: 8.7</div>
+
+<h2>Certifications</h2>
+<ul>
+  <li>Software Engineering Job Simulation, J.P. Morgan (virtual internship)</li>
+  <li>Advanced Software Engineering Job Simulation, Walmart (virtual internship)</li>
+  <li>Complete JavaScript, Udemy | Machine Learning, Udemy | SAP Training, Code Unnati</li>
+</ul>
+
+</body>
+</html>
