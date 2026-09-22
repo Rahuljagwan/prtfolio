@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { BoxGeometry, BufferAttribute, BufferGeometry, Color, Euler, MeshStandardMaterial, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
 import type { RigCurves } from "@/lib/world/rig-path";
@@ -11,7 +11,12 @@ import type { RigShared } from "./RigDriver";
 
 const GROUND_Y = -2.7;
 const BUILDINGS = 120;
-const GATE_U = [1.6, 1.9, 2.2, 2.5, 2.8]; // path positions of the milestone gates
+// Five milestone gates the route passes through: Build, Test (CI), then Staging, Canary, Production (CD). No
+// on-screen text — colour alone carries the status (amber = in progress, green = deployed/healthy, the same rule as
+// everywhere else in this world), so scrolling past them reads as amber, amber, green, green, green: a pipeline
+// moving toward production, not five identical arches.
+const GATE_U = [1.6, 1.9, 2.2, 2.5, 2.8];
+const CI_GATES = 2; // the first CI_GATES entries of GATE_U are CI; the rest are CD
 const GATE_HALF_WIDTH = 3;
 const GATE_HEIGHT = 5.6;
 
@@ -35,10 +40,12 @@ interface Layout {
   buildings: Matrix4[];
   strips: Matrix4[]; // lit bands on some building faces
   antennas: Matrix4[]; // rooftop masts on the taller towers
-  gateParts: Matrix4[];
+  ciGateParts: Matrix4[]; // pillars, lintel and marker for the two CI gates
+  ciLightParts: Matrix4[]; // their light bars, kept separate so it can pulse on its own
+  cdGateParts: Matrix4[]; // the three CD gates
+  cdLightParts: Matrix4[];
   edges: BufferGeometry;
   ground: BufferGeometry;
-  gateCount: number;
 }
 
 /** Geometric city along the route, with a gate the route passes through at each milestone. Deterministic layout. */
@@ -94,10 +101,14 @@ function buildLayout(curves: RigCurves): Layout {
     }
   }
 
-  // Milestone gates: two pillars, a lintel, a light bar and a diamond marker, facing along the route.
-  const gateParts: Matrix4[] = [];
+  // Milestone gates: two pillars, a lintel and a diamond marker (structure), plus a light bar kept separate so it
+  // can pulse on its own — see GATE_U's comment for the CI/CD split and why there is no text.
+  const ciGateParts: Matrix4[] = [];
+  const ciLightParts: Matrix4[] = [];
+  const cdGateParts: Matrix4[] = [];
+  const cdLightParts: Matrix4[] = [];
   const tanQ = new Quaternion();
-  for (const u of GATE_U) {
+  GATE_U.forEach((u, gi) => {
     const t = u / last;
     const p = curves.position.getPoint(t);
     const tan = curves.position.getTangent(t);
@@ -105,14 +116,19 @@ function buildLayout(curves: RigCurves): Layout {
     const base = new Matrix4().compose(new Vector3(p.x, GROUND_Y, p.z), tanQ, new Vector3(1, 1, 1));
     const part = (x: number, y: number, sx: number, sy: number, sz: number, rz = 0) =>
       new Matrix4().multiplyMatrices(base, new Matrix4().compose(new Vector3(x, y, 0), new Quaternion().setFromEuler(new Euler(0, 0, rz)), new Vector3(sx, sy, sz)));
-    gateParts.push(
+    const structure = gi < CI_GATES ? ciGateParts : cdGateParts;
+    const light = gi < CI_GATES ? ciLightParts : cdLightParts;
+    structure.push(
       part(-GATE_HALF_WIDTH, GATE_HEIGHT / 2, 0.08, GATE_HEIGHT, 0.08),
       part(GATE_HALF_WIDTH, GATE_HEIGHT / 2, 0.08, GATE_HEIGHT, 0.08),
       part(0, GATE_HEIGHT, GATE_HALF_WIDTH * 2 + 0.08, 0.08, 0.08),
-      part(0, GATE_HEIGHT - 0.5, GATE_HALF_WIDTH * 2 - 0.4, 0.03, 0.03),
       part(0, GATE_HEIGHT + 0.7, 0.4, 0.4, 0.06, Math.PI / 4),
     );
-  }
+    // The CI light bar is thicker than CD's: amber reads weaker than green against this green-heavy backdrop (district
+    // edges, route line, halos), so its status carrier needs more presence, not just a brighter colour.
+    const barH = gi < CI_GATES ? 0.05 : 0.03;
+    light.push(part(0, GATE_HEIGHT - 0.5, GATE_HALF_WIDTH * 2 - 0.4, barH, barH));
+  });
 
   // Ground grid under the whole district (the Foundation grid fades out as this one fades in).
   const gp: number[] = [];
@@ -122,7 +138,7 @@ function buildLayout(curves: RigCurves): Layout {
   for (let x = -ext; x <= ext; x += 4) gp.push(x, GROUND_Y, zNear, x, GROUND_Y, zFar);
   for (let z = zNear; z >= zFar; z -= 4) gp.push(-ext, GROUND_Y, z, ext, GROUND_Y, z);
 
-  return { buildings, strips, antennas, gateParts, edges: lineGeo(edgePts), ground: lineGeo(gp), gateCount: GATE_U.length };
+  return { buildings, strips, antennas, ciGateParts, ciLightParts, cdGateParts, cdLightParts, edges: lineGeo(edgePts), ground: lineGeo(gp) };
 }
 
 /**
@@ -200,7 +216,10 @@ export function makeCityMaterial() {
 type Mats = {
   ants?: THREE.MeshBasicMaterial;
   strips?: THREE.MeshBasicMaterial;
-  gates?: THREE.MeshBasicMaterial;
+  ciGates?: THREE.MeshBasicMaterial;
+  ciLight?: THREE.MeshBasicMaterial;
+  cdGates?: THREE.MeshBasicMaterial;
+  cdLight?: THREE.MeshBasicMaterial;
   edges?: THREE.LineBasicMaterial;
   ground?: THREE.LineBasicMaterial;
 };
@@ -212,29 +231,42 @@ function fill(mesh: InstancedMesh | null, matrices: Matrix4[]) {
 }
 
 /**
- * Zone 3, "The Build": production systems as a city. Lit towers with stepped crowns and masts frame the route, and five
- * milestone gates stand on it for the camera to fly through. The buildings are opaque, depth-tested and shaded with a small
- * procedural shader (window grid, glass, height gradient, sky rim); see makeCityMaterial. Static, and every kind of object
- * is one instanced draw call.
+ * Zone 3, "The Build": production systems as a city, in two beats sharing one continuous backdrop. Lit towers with
+ * stepped crowns and masts frame the route; five milestone gates stand on it for the camera to fly through, the
+ * first two amber (CI: build, test), the last three green (CD: staging, canary, production) — see GATE_U's comment.
+ * Each gate's light bar pulses on its own, the same "the system is alive" idea as the Gate zone's status bar. The
+ * buildings are opaque, depth-tested and shaded with a small procedural shader (window grid, glass, height
+ * gradient, sky rim); see makeCityMaterial. Every kind of object is one instanced draw call; only the two light
+ * bars animate per frame, so this needs the render scheduler's idle animation (see useRenderScheduler's
+ * cityVisible) to keep pulsing while the visitor is reading Experience or Journey without scrolling.
  */
 export function CityZone({ palette, dark, curves, shared }: { palette: WorldPalette; dark: boolean; curves: RigCurves; shared: MutableRefObject<RigShared> }) {
   const root = useRef<THREE.Group>(null);
   const buildingMesh = useRef<InstancedMesh>(null);
   const stripMesh = useRef<InstancedMesh>(null);
-  const gateMesh = useRef<InstancedMesh>(null);
+  const ciGateMesh = useRef<InstancedMesh>(null);
+  const ciLightMesh = useRef<InstancedMesh>(null);
+  const cdGateMesh = useRef<InstancedMesh>(null);
+  const cdLightMesh = useRef<InstancedMesh>(null);
   const mats = useRef<Mats>({});
   const fade = useRef(-1);
+  const invalidate = useThree((s) => s.invalidate);
 
   const layout = useMemo(() => buildLayout(curves), [curves]);
   const antMesh = useRef<InstancedMesh>(null);
   const { material: cityMat, uni } = useMemo(makeCityMaterial, []);
   const box = useMemo(() => new BoxGeometry(1, 1, 1), []);
+  const ciLightColor = useMemo(() => new Color(), []);
+  const cdLightColor = useMemo(() => new Color(), []);
 
   useEffect(() => {
     fill(buildingMesh.current, layout.buildings);
     fill(stripMesh.current, layout.strips);
     fill(antMesh.current, layout.antennas);
-    fill(gateMesh.current, layout.gateParts);
+    fill(ciGateMesh.current, layout.ciGateParts);
+    fill(ciLightMesh.current, layout.ciLightParts);
+    fill(cdGateMesh.current, layout.cdGateParts);
+    fill(cdLightMesh.current, layout.cdLightParts);
   }, [layout]);
 
   useEffect(() => {
@@ -247,11 +279,20 @@ export function CityZone({ palette, dark, curves, shared }: { palette: WorldPale
     uni.uRim.value.set(palette.primary);
     M.ants?.color.set(palette.accent);
     M.strips?.color.set(palette.accent);
-    M.gates?.color.set(palette.accent);
+    M.ciGates?.color.set(palette.accent); // CI: amber, in progress
+    M.cdGates?.color.set(palette.primary); // CD: green, deployed/healthy
+    // Light bars blend toward white, the same reason the Gate zone's status bar and the hero's completion flash do:
+    // a pulse in the exact structure colour barely registers against that same-hued structure. CI blends further —
+    // this whole district reads green by default (buildings, edges, the route line), so amber needs to be pushed
+    // harder to stay legible against it; a screenshot check confirmed the original 0.5 blend read as green, not amber.
+    ciLightColor.set(palette.accent).lerp(new Color("#ffffff"), 0.72);
+    cdLightColor.set(palette.primary).lerp(new Color("#ffffff"), 0.5);
+    M.ciLight?.color.copy(ciLightColor);
+    M.cdLight?.color.copy(cdLightColor);
     M.edges?.color.set(palette.primary);
     M.ground?.color.set(palette.grid);
     fade.current = -1;
-  }, [palette, dark, cityMat, uni]);
+  }, [palette, dark, cityMat, uni, ciLightColor, cdLightColor]);
 
   useEffect(
     () => () => {
@@ -278,9 +319,19 @@ export function CityZone({ palette, dark, curves, shared }: { palette: WorldPale
       uni.uFade.value = f; // buildings are opaque and depth-tested; they dissolve with a dither instead of blending
       if (M.ants) M.ants.opacity = 0.9 * f;
       if (M.strips) M.strips.opacity = 0.45 * f;
-      if (M.gates) M.gates.opacity = 0.6 * f;
+      if (M.ciGates) M.ciGates.opacity = 0.6 * f;
+      if (M.cdGates) M.cdGates.opacity = 0.6 * f;
       if (M.edges) M.edges.opacity = 0.5 * f;
       if (M.ground) M.ground.opacity = 0.28 * f;
+    }
+    // The two light bars pulse continuously (independent of the fade-refresh threshold above), same technique as
+    // the Gate zone's status bar. Needs a redraw every frame it is visible, hence invalidate().
+    const M = mats.current;
+    if (M.ciLight || M.cdLight) {
+      const pulse = 0.5 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() * 0.0016));
+      if (M.ciLight) M.ciLight.opacity = 0.95 * f * pulse; // brighter peak: amber needs more presence against this green-heavy backdrop
+      if (M.cdLight) M.cdLight.opacity = 0.6 * f * pulse;
+      invalidate();
     }
   });
 
@@ -302,8 +353,17 @@ export function CityZone({ palette, dark, curves, shared }: { palette: WorldPale
       <instancedMesh ref={antMesh} args={[box, undefined, layout.antennas.length]} frustumCulled={false}>
         <meshBasicMaterial ref={bind("ants")} transparent opacity={0} depthWrite={false} />
       </instancedMesh>
-      <instancedMesh ref={gateMesh} args={[box, undefined, layout.gateParts.length]} frustumCulled={false}>
-        <meshBasicMaterial ref={bind("gates")} transparent opacity={0} depthWrite={false} />
+      <instancedMesh ref={ciGateMesh} args={[box, undefined, layout.ciGateParts.length]} frustumCulled={false}>
+        <meshBasicMaterial ref={bind("ciGates")} transparent opacity={0} depthWrite={false} />
+      </instancedMesh>
+      <instancedMesh ref={ciLightMesh} args={[box, undefined, layout.ciLightParts.length]} frustumCulled={false}>
+        <meshBasicMaterial ref={bind("ciLight")} transparent opacity={0} depthWrite={false} />
+      </instancedMesh>
+      <instancedMesh ref={cdGateMesh} args={[box, undefined, layout.cdGateParts.length]} frustumCulled={false}>
+        <meshBasicMaterial ref={bind("cdGates")} transparent opacity={0} depthWrite={false} />
+      </instancedMesh>
+      <instancedMesh ref={cdLightMesh} args={[box, undefined, layout.cdLightParts.length]} frustumCulled={false}>
+        <meshBasicMaterial ref={bind("cdLight")} transparent opacity={0} depthWrite={false} />
       </instancedMesh>
     </group>
   );

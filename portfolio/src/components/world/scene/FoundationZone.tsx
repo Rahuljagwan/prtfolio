@@ -1,14 +1,39 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
-import { useFrame } from "@react-three/fiber";
-import { BoxGeometry, BufferAttribute, BufferGeometry, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
+import { useFrame, useThree } from "@react-three/fiber";
+import { BoxGeometry, BufferAttribute, BufferGeometry, Color, Euler, type InstancedMesh, Matrix4, MeshBasicMaterial, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
+import type { RigCurves } from "@/lib/world/rig-path";
+import { ZONES } from "@/lib/world/zones";
 import { makeCityMaterial } from "./CityZone";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
 
 const GROUND_Y = -2.7;
+
+// ---- the gate: the single structure the whole site's narrative pivots on ("a request now has to be let in"). See the
+// big comment on the component below for the full reasoning. Members are deliberately slender (a wide opening, thin
+// pillars) — a "wall" reading up close comes from member thickness, not height, so that is the lever this pulls first.
+const GATE_U = 0.92;
+const GATE_HALF_WIDTH = 4.4;
+const GATE_HEIGHT = 3.2;
+const PILLAR_W = 0.2; // well under opening/6 (~1.47), so it reads as a slender frame even at close range
+const PILLAR_LOWER_FRAC = 0.8; // fraction of the height that is the wider lower segment, before it tapers
+const PILLAR_TAPER = 0.78; // the upper segment's width, as a fraction of the lower one
+const LINTEL_H = 0.2;
+
+// ---- the occasional 403: an ambient packet that approaches the gate off-centre and gets turned away. Same visual
+// technique as the visitor's own request in RequestOriginZone (sphere + halo + short instanced trail, eased in and
+// out) reused locally here, not a shared instance — the two live in different zones and never overlap on screen.
+const REJECT_DURATION = 1.7;
+const REJECT_TRAIL = 6;
+const REJECT_GAP: [number, number] = [5, 9]; // seconds between attempts, randomised
+
+const smooth = (x: number) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
 
 /** Tiny seeded PRNG so the layout is identical on every load (no random popping between visits). */
 function rng(seed: number) {
@@ -59,6 +84,50 @@ function makeDistrict(): { blocks: Footing[]; masts: Mast[] } {
     }
   }
   return { blocks, masts };
+}
+
+interface GateLayout {
+  /** Two pillars and the lintel, as one instanced mesh. */
+  parts: Matrix4[];
+  /** The status bar under the lintel gets its own mesh (it pulses on its own), so its transform is kept separately. */
+  statusBar: Matrix4;
+  base: Vector3;
+  forward: Vector3;
+  right: Vector3;
+}
+
+/**
+ * The gate: two pillars, a lintel, and a status bar, built directly on the route curve the camera and every packet
+ * ride — GATE_U sits just short of the Foundation pose (u = 1) so the camera has already threaded the archway by the
+ * time it settles to read the About content, rather than idling inside it. Same technique as CityZone's milestone
+ * gates (a base transform from the curve's point + tangent there, every part composed relative to it) — proven to
+ * track the route precisely, so it is reused rather than re-derived.
+ */
+function buildGate(curves: RigCurves, last: number): GateLayout {
+  const t = GATE_U / last;
+  const p = curves.position.getPoint(t);
+  const tan = curves.position.getTangent(t).clone();
+  tan.y = 0;
+  tan.normalize();
+  const angle = Math.atan2(tan.x, tan.z);
+  const tanQ = new Quaternion().setFromEuler(new Euler(0, angle, 0));
+  const base = new Matrix4().compose(new Vector3(p.x, GROUND_Y, p.z), tanQ, new Vector3(1, 1, 1));
+  const part = (x: number, y: number, sx: number, sy: number, sz: number) =>
+    new Matrix4().multiplyMatrices(base, new Matrix4().compose(new Vector3(x, y, 0), new Quaternion(), new Vector3(sx, sy, sz)));
+  // Each pillar is two stacked segments, the upper one narrower, so it reads as a tapered structure rather than a
+  // monolith even though both segments share the same height as before.
+  const lowerH = GATE_HEIGHT * PILLAR_LOWER_FRAC;
+  const upperH = GATE_HEIGHT - lowerH;
+  const upperW = PILLAR_W * PILLAR_TAPER;
+  const parts: Matrix4[] = [];
+  for (const side of [-1, 1]) {
+    const x = side * GATE_HALF_WIDTH;
+    parts.push(part(x, lowerH / 2, PILLAR_W, lowerH, PILLAR_W));
+    parts.push(part(x, lowerH + upperH / 2, upperW, upperH, upperW));
+  }
+  parts.push(part(0, GATE_HEIGHT, GATE_HALF_WIDTH * 2 + PILLAR_W, LINTEL_H, PILLAR_W));
+  const statusBar = part(0, GATE_HEIGHT - 0.4, GATE_HALF_WIDTH * 2 - 0.6, 0.06, 0.06);
+  return { parts, statusBar, base: new Vector3(p.x, GROUND_Y, p.z), forward: new Vector3(Math.sin(angle), 0, Math.cos(angle)), right: new Vector3(Math.cos(angle), 0, -Math.sin(angle)) };
 }
 
 const lineGeo = (a: number[]) => new BufferGeometry().setAttribute("position", new BufferAttribute(new Float32Array(a), 3));
@@ -120,20 +189,26 @@ type Mats = {
   rings?: THREE.LineBasicMaterial;
   ants?: THREE.MeshBasicMaterial;
   horizon?: THREE.MeshBasicMaterial;
+  gate?: THREE.MeshBasicMaterial;
+  statusBar?: THREE.MeshBasicMaterial;
 };
 
 /**
- * Zone 2, "Foundation": the ground everything else is built on. A wireframe blueprint grid running to a glowing
- * horizon, a survey datum (concentric rings) under the route, and a low-rise district of lit blocks at the edges of the corridor.
- * Fades in as you leave the hero so the first screen stays a calm void.
+ * Zone 2, "The Gate": the request has left the browser and now has to be let in. A wireframe blueprint grid running
+ * to a glowing horizon, a survey datum (concentric rings) under the route, a low-rise district at the edges of the
+ * corridor — and, straddling the route itself, the gate every packet visibly passes through (see buildGate above).
+ * A status bar under the lintel pulses to say the gate is open; every so often an ambient, unrelated request
+ * approaches off-centre and is turned away with an amber flash — a 403, not the visitor's own request, which always
+ * goes through untouched. Fades in as you leave the hero so the first screen stays a calm void.
  */
-export function FoundationZone({ palette, dark, shared }: { palette: WorldPalette; dark: boolean; shared: MutableRefObject<RigShared> }) {
+export function FoundationZone({ palette, dark, curves, shared }: { palette: WorldPalette; dark: boolean; curves: RigCurves; shared: MutableRefObject<RigShared> }) {
   const root = useRef<THREE.Group>(null);
   const rings = useRef<THREE.LineSegments>(null);
   const boxes = useRef<InstancedMesh>(null);
   const antMesh = useRef<InstancedMesh>(null);
   const mats = useRef<Mats>({});
   const fade = useRef(-1);
+  const invalidate = useThree((s) => s.invalidate);
 
   const { blocks: footings, masts } = useMemo(makeDistrict, []);
   const { material: cityMat, uni } = useMemo(makeCityMaterial, []);
@@ -141,6 +216,27 @@ export function FoundationZone({ palette, dark, shared }: { palette: WorldPalett
   const edges = useMemo(() => makeEdges(footings), [footings]);
   const ringGeo = useMemo(() => makeRings([1.6, 3.2, 5.2, 8]), []);
   const boxGeo = useMemo(() => new BoxGeometry(1, 1, 1), []);
+  const gateLayout = useMemo(() => buildGate(curves, ZONES.length - 1), [curves]);
+  const gateMesh = useRef<InstancedMesh>(null);
+  const statusBar = useRef<THREE.Mesh>(null);
+  const statusColor = useMemo(() => new Color(), []);
+
+  // ---- the occasional 403 (see the component comment above).
+  const reject = useRef({ t: -1, next: 4 + Math.random() * 3 });
+  const rejectPts = useRef({ a: new Vector3(), d: new Vector3(), b: new Vector3() });
+  const rejectGroup = useRef<THREE.Group>(null);
+  const rejectTrailMesh = useRef<InstancedMesh>(null);
+  const rejectPacketMat = useMemo(() => new MeshBasicMaterial({ color: "#fff3d9", transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }), []);
+  const rejectHaloMat = useMemo(() => new MeshBasicMaterial({ transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }), []);
+  const rejectTrailMat = useMemo(() => new MeshBasicMaterial({ transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }), []);
+  const rejectAccent = useMemo(() => new Color(), []);
+  const rejectFlashColor = useMemo(() => new Color(), []);
+  const tmpRP = useMemo(() => new Vector3(), []);
+  const tmpRP2 = useMemo(() => new Vector3(), []);
+  const tmpRM = useMemo(() => new Matrix4(), []);
+  const tmpRQ = useMemo(() => new Quaternion(), []);
+  const tmpRS = useMemo(() => new Vector3(), []);
+
   const horizonGeo = useMemo(() => {
     // Gradient band: strong at the ground line, fading upward. Alpha comes from the 4-component vertex colour.
     const w = 120;
@@ -173,6 +269,18 @@ export function FoundationZone({ palette, dark, shared }: { palette: WorldPalett
   }, [footings, masts]);
 
   useEffect(() => {
+    const m = gateMesh.current;
+    if (!m) return;
+    gateLayout.parts.forEach((mtx, i) => m.setMatrixAt(i, mtx));
+    m.instanceMatrix.needsUpdate = true;
+    const sb = statusBar.current;
+    if (sb) {
+      sb.matrixAutoUpdate = false;
+      sb.matrix.copy(gateLayout.statusBar);
+    }
+  }, [gateLayout]);
+
+  useEffect(() => {
     const M = mats.current;
     M.fine?.color.set(palette.grid);
     M.major?.color.set(palette.primary);
@@ -186,8 +294,17 @@ export function FoundationZone({ palette, dark, shared }: { palette: WorldPalett
     uni.uRim.value.set(palette.primary);
     M.ants?.color.set(palette.accent);
     M.horizon?.color.set(palette.accent);
+    M.gate?.color.set(palette.primary);
+    // Blended toward white, the same reason RequestOriginZone blends its completion flash: the raw "healthy" green is
+    // the same hue as the gate structure itself, so a same-hue status light barely reads as lit against it.
+    statusColor.set(palette.primary).lerp(new Color("#ffffff"), 0.5);
+    M.statusBar?.color.copy(statusColor);
+    rejectAccent.set(palette.accent);
+    rejectFlashColor.set(palette.accent).lerp(new Color("#ffffff"), 0.55);
+    rejectHaloMat.color.copy(rejectAccent);
+    rejectTrailMat.color.copy(rejectAccent);
     fade.current = -1; // force opacity refresh
-  }, [palette, dark, cityMat, uni]);
+  }, [palette, dark, cityMat, uni, statusColor, rejectAccent, rejectFlashColor, rejectHaloMat, rejectTrailMat]);
 
   useEffect(
     () => () => {
@@ -198,8 +315,11 @@ export function FoundationZone({ palette, dark, shared }: { palette: WorldPalett
       ringGeo.dispose();
       horizonGeo.dispose();
       boxGeo.dispose();
+      rejectPacketMat.dispose();
+      rejectHaloMat.dispose();
+      rejectTrailMat.dispose();
     },
-    [grid, edges, ringGeo, horizonGeo, boxGeo, cityMat],
+    [grid, edges, ringGeo, horizonGeo, boxGeo, cityMat, rejectPacketMat, rejectHaloMat, rejectTrailMat],
   );
 
   useFrame((_, delta) => {
@@ -221,8 +341,67 @@ export function FoundationZone({ palette, dark, shared }: { palette: WorldPalett
       uni.uFade.value = f; // opaque and depth-tested; dissolves with a dither, and is fully in by the About plateau
       if (M.ants) M.ants.opacity = 0.9 * f;
       if (M.horizon) M.horizon.opacity = 0.35 * f;
+      if (M.gate) M.gate.opacity = 0.85 * f;
     }
     if (rings.current) rings.current.rotation.y += Math.min(delta, 0.05) * 0.05; // the zone's only motion
+
+    // The status bar under the lintel: a slow pulse, saying the gate is open, independent of the zone's own fade-in.
+    const sbMat = mats.current.statusBar;
+    if (sbMat) {
+      const pulse = 0.5 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() * 0.0016));
+      sbMat.opacity = f * pulse;
+    }
+
+    // The occasional 403: on a timer, an ambient request approaches the gate off-centre and gets turned away.
+    const rj = reject.current;
+    if (rj.t < 0) {
+      rj.next -= delta; // real elapsed time between attempts, not clamped: it should stay roughly REJECT_GAP seconds apart
+      if (rj.next <= 0) {
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const { base, forward, right } = gateLayout;
+        const y = base.y + 0.85;
+        const inset = GATE_HALF_WIDTH * 0.45; // off-centre but still inside the opening, approaching
+        const kicked = GATE_HALF_WIDTH * 1.3; // beyond the pillars, after the deflect
+        rejectPts.current.a.copy(base).addScaledVector(forward, -5.4).addScaledVector(right, side * inset).setY(y);
+        rejectPts.current.d.copy(base).addScaledVector(forward, -1.05).addScaledVector(right, side * inset).setY(y);
+        rejectPts.current.b.copy(base).addScaledVector(forward, -0.25).addScaledVector(right, side * kicked).setY(y);
+        rj.t = 0;
+        rj.next = REJECT_GAP[0] + Math.random() * (REJECT_GAP[1] - REJECT_GAP[0]);
+      }
+    } else {
+      rj.t += Math.min(delta, 0.1) / REJECT_DURATION;
+      invalidate(); // demand-mode: keep the loop alive while this short animation is running, same as the hero's own packet
+      if (rj.t >= 1) rj.t = -1;
+    }
+    if (rj.t >= 0) {
+      const tt = rj.t;
+      const P = rejectPts.current;
+      const atSeg = (k: number) => (k < 0.6 ? tmpRP.copy(P.a).lerp(P.d, smooth(k / 0.6)) : tmpRP.copy(P.d).lerp(P.b, smooth((k - 0.6) / 0.4)));
+      const pos = atSeg(tt);
+      if (rejectGroup.current) rejectGroup.current.position.copy(pos);
+      const edge = Math.min(1, tt * 9) * Math.min(1, (1 - tt) * 5);
+      const flash = tt > 0.55 && tt < 0.8;
+      rejectPacketMat.opacity = edge * 0.8;
+      rejectHaloMat.opacity = edge * (flash ? 0.85 : 0.3);
+      rejectHaloMat.color.copy(flash ? rejectFlashColor : rejectAccent);
+      const tm = rejectTrailMesh.current;
+      if (tm) {
+        for (let k = 0; k < REJECT_TRAIL; k++) {
+          const ttk = Math.max(0, tt - (k + 1) * 0.02);
+          const k2 = ttk < 0.6 ? tmpRP2.copy(P.a).lerp(P.d, smooth(ttk / 0.6)) : tmpRP2.copy(P.d).lerp(P.b, smooth((ttk - 0.6) / 0.4));
+          const s = 0.075 * (1 - k / REJECT_TRAIL) * edge;
+          tmpRM.compose(k2, tmpRQ, tmpRS.set(s, s, s));
+          tm.setMatrixAt(k, tmpRM);
+        }
+        tm.instanceMatrix.needsUpdate = true;
+        rejectTrailMat.opacity = edge * 0.55;
+        rejectTrailMat.color.copy(flash ? rejectFlashColor : rejectAccent);
+      }
+    } else {
+      rejectPacketMat.opacity = 0;
+      rejectHaloMat.opacity = 0;
+      rejectTrailMat.opacity = 0;
+    }
   });
 
   const bind = <K extends keyof Mats>(key: K) => (m: Mats[K] | null) => void (mats.current[key] = (m ?? undefined) as Mats[K]);
@@ -254,6 +433,27 @@ export function FoundationZone({ palette, dark, shared }: { palette: WorldPalett
       <mesh geometry={horizonGeo} position={[0, GROUND_Y, -60]}>
         <meshBasicMaterial ref={bind("horizon")} vertexColors transparent opacity={0} depthWrite={false} fog={false} />
       </mesh>
+
+      {/* The gate: two pillars and a lintel, straddling the route curve every packet (and the camera) rides through. */}
+      <instancedMesh ref={gateMesh} args={[boxGeo, undefined, gateLayout.parts.length]} frustumCulled={false}>
+        <meshBasicMaterial ref={bind("gate")} transparent opacity={0} depthWrite={false} />
+      </instancedMesh>
+      <mesh ref={statusBar} geometry={boxGeo}>
+        <meshBasicMaterial ref={bind("statusBar")} transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      {/* The occasional 403: an ambient packet with its own short trail, independent of the visitor's own request. */}
+      <instancedMesh ref={rejectTrailMesh} args={[undefined, undefined, REJECT_TRAIL]} frustumCulled={false} renderOrder={1800} material={rejectTrailMat}>
+        <sphereGeometry args={[1, 10, 8]} />
+      </instancedMesh>
+      <group ref={rejectGroup}>
+        <mesh renderOrder={1801} material={rejectHaloMat}>
+          <sphereGeometry args={[0.14, 12, 9]} />
+        </mesh>
+        <mesh renderOrder={1802} material={rejectPacketMat}>
+          <sphereGeometry args={[0.055, 12, 9]} />
+        </mesh>
+      </group>
     </group>
   );
 }

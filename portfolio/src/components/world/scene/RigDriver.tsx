@@ -15,6 +15,10 @@ export interface RigShared {
   warm?: boolean;
   /** Same idea for the project pods only, which mount later. Draws just the pods (not every zone) so it stays cheap. */
   podWarm?: boolean;
+  /** Position within the current zone's own scroll extent, -0.5 (top) to +0.5 (bottom) — see computeRig. Already
+   * computed every frame for the camera's own drift/weave; exposed here so a zone whose camera pose is frozen for its
+   * whole dwell (Stack, one pose shared by two sections) can still tell which part of its content is on screen. */
+  local?: number;
 }
 
 interface RigDriverProps {
@@ -59,6 +63,7 @@ export function RigDriver({ curves, layouts, host, shared, onReady }: RigDriverP
     }
     const u = shared.current.u;
     shared.current.zone = Math.min(ZONES.length - 1, Math.max(0, Math.round(u)));
+    shared.current.local = local;
 
     sampleRig(u, ZONES.length, curves, position, target);
     // A small lateral drift while a zone is on screen, so a long section never feels frozen. Fades out during travel.

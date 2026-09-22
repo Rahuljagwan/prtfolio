@@ -3,6 +3,7 @@ import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import type { SkillGroup } from "@/lib/types";
+import { IncidentPanel } from "./IncidentPanel";
 
 export function Skills({ groups }: { groups: SkillGroup[] }) {
   return (
@@ -23,6 +24,7 @@ export function Skills({ groups }: { groups: SkillGroup[] }) {
           </Reveal>
         ))}
       </div>
+      <IncidentPanel />
     </Section>
   );
 }

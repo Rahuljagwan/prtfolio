@@ -2,14 +2,44 @@
 
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
+import { WAKE_EVENT } from "@/lib/world/events";
 
-/** Dispatch this from anywhere (for example after a theme change) to make the world redraw. */
-export const WAKE_EVENT = "world:wake";
+// Re-exported so existing imports of WAKE_EVENT from this file keep working; the name is defined in lib/world/events.ts
+// (which has no three.js/R3F imports) so eagerly-loaded DOM code can reference it without pulling the 3D stack in too.
+export { WAKE_EVENT };
 
 const ACTIVE_MS = 1800; // keep drawing every frame this long after the last scroll/pointer/resize
 const IDLE_FRAME_MS = 66; // about 15 fps for the gentle idle motion while the hero is on screen
 const POD_FRAME_MS = 33; // about 30 fps while a project pod is on screen, where the motion is the point
 const IDLE_ANIMATION_MS = 10_000; // ...and only for this long after the last input, then it rests until the next one
+
+// Every zone with its own idle-driven animation (a pulse, a timer that needs to notice it has elapsed) registers the
+// DOM section id(s) that place it on screen here. This is the single place that decides "does this zone need to keep
+// drawing while the visitor sits still" — a zone that skips this list silently freezes the moment scrolling stops,
+// which has already happened once (About's status pulse + 403 timer) and been caught once more before shipping
+// (City's gate light bars): a missing entry here is easy to not notice until it's live. Adding a new zone with idle
+// motion is a one-line addition, not a new bespoke visibility function.
+const ZONE_WATCH: Record<string, string[]> = {
+  gate: ["about"],
+  city: ["experience", "journey", "projects"],
+  stack: ["skills", "education"],
+  // SignalOut's beacon (core rotation, expanding signal rings) had no idle animation registered at all — the same
+  // freeze bug caught twice before, just never noticed here since nothing had exercised it yet.
+  signalOut: ["resume", "contact"],
+};
+
+const sectionsVisible = (ids: string[]) =>
+  ids.some((id) => {
+    const el = document.getElementById(id);
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return r.top < window.innerHeight * 0.85 && r.bottom > window.innerHeight * 0.15;
+  });
+
+const zoneVisible = (zoneId: string) => {
+  const ids = ZONE_WATCH[zoneId];
+  return !!ids && sectionsVisible(ids);
+};
 
 /**
  * Render-on-demand driver. The canvas is in frameloop="demand", so nothing draws unless we ask. We ask:
@@ -28,7 +58,9 @@ export function useRenderScheduler() {
     let running = false;
     let lastActivity = performance.now();
 
-    // The two scenes with continuous idle motion: the hero core at the top and the beacon pulses at the very end.
+    // The hero and the closing beacon don't map to a single section id (hero also covers the page-bottom beacon
+    // reusing its idle motion), and pods key off a data attribute, not an id — those two stay bespoke predicates.
+    // Everything else registers in ZONE_WATCH above.
     const heroVisible = () =>
       window.scrollY < window.innerHeight * 0.9 ||
       window.scrollY + window.innerHeight > document.documentElement.scrollHeight - window.innerHeight * 0.5;
@@ -46,7 +78,11 @@ export function useRenderScheduler() {
     const tick = () => {
       const now = performance.now();
       const active = now - lastActivity < ACTIVE_MS;
-      const idleAnimation = !active && now - lastActivity < IDLE_ANIMATION_MS && (heroVisible() || podVisible()) && !document.hidden;
+      const idleAnimation =
+        !active &&
+        now - lastActivity < IDLE_ANIMATION_MS &&
+        (heroVisible() || podVisible() || Object.keys(ZONE_WATCH).some(zoneVisible)) &&
+        !document.hidden;
 
       if (!active && !idleAnimation) {
         running = false;

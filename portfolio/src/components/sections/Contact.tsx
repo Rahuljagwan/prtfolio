@@ -3,6 +3,7 @@ import { Reveal } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { WhatsAppQR } from "./WhatsAppQR";
+import { ContactTerminal } from "./ContactTerminal";
 import { LinkedinIcon } from "@/components/ui/BrandIcons";
 import { contactHref, findContact, WHATSAPP_GREETING } from "@/lib/contact";
 import type { ContactLink, ContactType } from "@/lib/types";
@@ -61,6 +62,10 @@ export function Contact({ contacts }: { contacts: ContactLink[] }) {
             </SpotlightCard>
           </Reveal>
         )}
+
+        <Reveal delay={0.16} className="lg:col-span-5">
+          <ContactTerminal contacts={contacts} />
+        </Reveal>
       </div>
     </Section>
   );

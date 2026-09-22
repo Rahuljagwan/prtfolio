@@ -14,7 +14,7 @@ import { CityZone } from "./scene/CityZone";
 import { DeploymentsZone } from "./scene/DeploymentsZone";
 import { FoundationZone } from "./scene/FoundationZone";
 import { StackZone } from "./scene/StackZone";
-import { SignalZone } from "./scene/SignalZone";
+import { RequestOriginZone } from "./scene/RequestOriginZone";
 import { WAKE_EVENT, useRenderScheduler } from "./scene/useRenderScheduler";
 import { SignalOutZone } from "./scene/SignalOutZone";
 
@@ -78,8 +78,8 @@ function World({ dark, host, layouts, onReady }: Pick<WorldSceneProps, "dark" | 
       <RouteLine curves={curves} palette={palette} />
       <RouteRings curves={curves} palette={palette} />
       <RouteDust curves={curves} palette={palette} count={1900} />
-      <SignalZone palette={palette} shared={shared} />
-      <FoundationZone palette={palette} dark={dark} shared={shared} />
+      <RequestOriginZone palette={palette} curves={curves} shared={shared} />
+      <FoundationZone palette={palette} dark={dark} curves={curves} shared={shared} />
       <CityZone palette={palette} dark={dark} curves={curves} shared={shared} />
       <DeploymentsZone palette={palette} dark={dark} curves={curves} shared={shared} />
       <StackZone palette={palette} curves={curves} shared={shared} />

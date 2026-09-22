@@ -3,6 +3,8 @@ import { AssistantLink } from "@/components/ui/AssistantLink";
 import { ButtonLink, buttonStyles } from "@/components/ui/Button";
 import { Magnetic } from "@/components/ui/Magnetic";
 import { HeroFallback } from "@/components/hero/HeroFallback";
+import { RequestCounter } from "@/components/hero/RequestCounter";
+import { FallbackNote } from "@/components/hero/FallbackNote";
 import { ResumeMenu } from "@/components/ui/ResumeMenu";
 import type { Profile, ResumeInfo } from "@/lib/types";
 
@@ -35,7 +37,12 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
           {profile.headline}
         </p>
 
-        <div style={delay(0.24)} className="mt-10 flex animate-fade-up flex-wrap items-center gap-3 motion-reduce:animate-none">
+        <div style={delay(0.2)} className="mt-4 animate-fade-up motion-reduce:animate-none">
+          <RequestCounter />
+          <FallbackNote />
+        </div>
+
+        <div style={delay(0.24)} className="mt-8 flex animate-fade-up flex-wrap items-center gap-3 motion-reduce:animate-none">
           <Magnetic>
             <ButtonLink href="#projects">View my work</ButtonLink>
           </Magnetic>
