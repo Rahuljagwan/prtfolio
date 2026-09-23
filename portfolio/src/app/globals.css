@@ -12,9 +12,11 @@
     --muted-foreground: 224 10% 40%;
     --card: 0 0% 100%;
     --border: 40 15% 86%;
-    --primary: 252 83% 58%;
+    /* Same green/amber status language as the 3D world's palette.ts (light: primary #0e6b48, accent #b9790f) -- the
+       whole site reads as one system, not a page chrome in one brand colour sitting on a world in another. */
+    --primary: 157 77% 24%;
     --primary-foreground: 0 0% 100%;
-    --accent: 24 95% 55%;
+    --accent: 37 85% 39%;
     --radius: 1rem;
   }
 
@@ -25,9 +27,12 @@
     --muted-foreground: 228 10% 62%;
     --card: 228 26% 9%;
     --border: 228 18% 16%;
-    --primary: 252 90% 70%;
+    /* palette.ts dark: primary #2be08a, accent #f5b942. Foreground on primary flips to dark text: the bright green
+       needs a dark ink to stay readable, the same reason the world's own status lights blend toward white instead
+       of using their raw hue for a flash -- a light-on-light or dark-on-dark pairing barely reads as lit. */
+    --primary: 152 74% 52%;
     --primary-foreground: 228 30% 6%;
-    --accent: 172 80% 55%;
+    --accent: 40 90% 61%;
   }
 
   * {
@@ -142,9 +147,20 @@ html.theme-fading *::after {
 /* ---- Page backgrounds ---------------------------------------------------------------------------------------
    Pure CSS: static gradients and tiny SVG tiles. Only two layers per theme animate, and only via transform/opacity,
    so they stay on the compositor and never compete with the hero's WebGL scene. */
-.bg-stars-a { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Ccircle cx='48.4' cy='305.1' r='0.5' fill='white' fill-opacity='0.42'/%3E%3Ccircle cx='178.4' cy='161.8' r='1.0' fill='white' fill-opacity='0.76'/%3E%3Ccircle cx='33.8' cy='10.2' r='1.0' fill='white' fill-opacity='0.53'/%3E%3Ccircle cx='274.4' cy='0.8' r='1.0' fill='white' fill-opacity='0.42'/%3E%3Ccircle cx='288.7' cy='212.8' r='0.5' fill='white' fill-opacity='0.84'/%3E%3Ccircle cx='11.0' cy='9.2' r='1.3' fill='white' fill-opacity='0.26'/%3E%3Ccircle cx='317.2' cy='247.1' r='1.0' fill='white' fill-opacity='0.72'/%3E%3Ccircle cx='189.9' cy='274.9' r='1.0' fill='white' fill-opacity='0.61'/%3E%3Ccircle cx='124.5' cy='243.7' r='1.0' fill='white' fill-opacity='0.87'/%3E%3Ccircle cx='333.5' cy='149.8' r='1.3' fill='white' fill-opacity='0.85'/%3E%3Ccircle cx='36.0' cy='226.6' r='0.8' fill='white' fill-opacity='0.33'/%3E%3Ccircle cx='119.8' cy='259.7' r='1.3' fill='white' fill-opacity='0.86'/%3E%3Ccircle cx='152.0' cy='298.8' r='0.6' fill='white' fill-opacity='0.45'/%3E%3Ccircle cx='211.5' cy='317.7' r='1.3' fill='white' fill-opacity='0.51'/%3E%3Ccircle cx='307.2' cy='172.9' r='1.0' fill='white' fill-opacity='0.52'/%3E%3Ccircle cx='62.3' cy='197.6' r='0.8' fill='white' fill-opacity='0.31'/%3E%3Ccircle cx='239.0' cy='38.9' r='0.6' fill='white' fill-opacity='0.59'/%3E%3Ccircle cx='141.6' cy='176.3' r='0.5' fill='white' fill-opacity='0.56'/%3E%3Ccircle cx='111.1' cy='305.4' r='1.3' fill='white' fill-opacity='0.64'/%3E%3Ccircle cx='141.7' cy='61.3' r='1.3' fill='white' fill-opacity='0.40'/%3E%3Ccircle cx='4.4' cy='71.8' r='1.3' fill='white' fill-opacity='0.40'/%3E%3Ccircle cx='185.0' cy='342.9' r='1.3' fill='white' fill-opacity='0.48'/%3E%3Ccircle cx='327.5' cy='237.3' r='1.3' fill='white' fill-opacity='0.87'/%3E%3Ccircle cx='2.1' cy='282.1' r='1.3' fill='white' fill-opacity='0.78'/%3E%3Ccircle cx='186.7' cy='202.1' r='1.0' fill='white' fill-opacity='0.87'/%3E%3Ccircle cx='173.2' cy='131.3' r='1.3' fill='white' fill-opacity='0.38'/%3E%3Ccircle cx='181.7' cy='174.6' r='0.8' fill='white' fill-opacity='0.52'/%3E%3Ccircle cx='0.6' cy='194.4' r='1.3' fill='white' fill-opacity='0.47'/%3E%3Ccircle cx='215.9' cy='289.6' r='0.6' fill='white' fill-opacity='0.61'/%3E%3Ccircle cx='65.1' cy='33.0' r='1.3' fill='white' fill-opacity='0.77'/%3E%3Ccircle cx='293.9' cy='91.9' r='0.5' fill='white' fill-opacity='0.30'/%3E%3Ccircle cx='6.0' cy='5.2' r='0.8' fill='white' fill-opacity='0.41'/%3E%3Ccircle cx='39.4' cy='224.9' r='0.8' fill='white' fill-opacity='0.44'/%3E%3Ccircle cx='60.3' cy='91.9' r='0.6' fill='white' fill-opacity='0.68'/%3E%3C/svg%3E"); background-size: 360px 360px; }
-.bg-stars-b { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520'%3E%3Ccircle cx='497.1' cy='492.9' r='0.5' fill='white' fill-opacity='0.31'/%3E%3Ccircle cx='187.7' cy='87.9' r='0.8' fill='white' fill-opacity='0.41'/%3E%3Ccircle cx='110.4' cy='18.6' r='0.6' fill='white' fill-opacity='0.90'/%3E%3Ccircle cx='332.0' cy='417.9' r='1.3' fill='white' fill-opacity='0.87'/%3E%3Ccircle cx='283.0' cy='231.3' r='0.8' fill='white' fill-opacity='0.84'/%3E%3Ccircle cx='452.9' cy='189.3' r='0.8' fill='white' fill-opacity='0.84'/%3E%3Ccircle cx='220.3' cy='459.7' r='0.6' fill='white' fill-opacity='0.61'/%3E%3Ccircle cx='122.8' cy='12.4' r='0.8' fill='white' fill-opacity='0.36'/%3E%3Ccircle cx='265.3' cy='187.0' r='1.3' fill='white' fill-opacity='0.69'/%3E%3Ccircle cx='94.6' cy='464.7' r='1.0' fill='white' fill-opacity='0.73'/%3E%3Ccircle cx='471.4' cy='396.7' r='1.3' fill='white' fill-opacity='0.48'/%3E%3Ccircle cx='510.1' cy='500.2' r='0.6' fill='white' fill-opacity='0.87'/%3E%3Ccircle cx='207.9' cy='384.1' r='1.3' fill='white' fill-opacity='0.41'/%3E%3Ccircle cx='145.1' cy='259.0' r='1.3' fill='white' fill-opacity='0.79'/%3E%3Ccircle cx='184.0' cy='459.1' r='1.0' fill='white' fill-opacity='0.48'/%3E%3Ccircle cx='377.5' cy='289.9' r='1.0' fill='white' fill-opacity='0.57'/%3E%3Ccircle cx='115.3' cy='168.8' r='0.6' fill='white' fill-opacity='0.82'/%3E%3Ccircle cx='320.5' cy='402.0' r='1.0' fill='white' fill-opacity='0.45'/%3E%3C/svg%3E"); background-size: 520px 520px; background-position: 140px 90px; }
 .bg-grain { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%2523n%29'/%3E%3C/svg%3E"); background-size: 180px 180px; }
+
+/* Dark-theme atmosphere: replaces a literal starfield (white points read as "night sky", the strongest space cue on
+   the site). Sparse, dim, fog-toned dots at two scales -- depth haze, not stars: no white, no twinkle, just a slow
+   drift (see Background.tsx) so it reads as air between the camera and the horizon. */
+.bg-haze {
+  background-image: radial-gradient(hsl(160 20% 70% / 0.10) 1px, transparent 1.4px);
+  background-size: 150px 150px;
+}
+.bg-haze-fine {
+  background-image: radial-gradient(hsl(160 15% 60% / 0.07) 1px, transparent 1.2px);
+  background-size: 95px 95px;
+  background-position: 40px 60px;
+}
 
 .bg-grid-dark {
   background-image:
@@ -159,20 +175,6 @@ html.theme-fading *::after {
   background-size: 26px 26px;
   -webkit-mask-image: radial-gradient(ellipse 80% 65% at 50% 25%, #000 15%, transparent 78%);
   mask-image: radial-gradient(ellipse 80% 65% at 50% 25%, #000 15%, transparent 78%);
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
-}
-.animate-twinkle {
-  animation: twinkle 7s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .animate-twinkle {
-    animation: none;
-    opacity: 0.7;
-  }
 }
 
 /* ---- Scroll reveal ------------------------------------------------------------------------------------------
@@ -231,23 +233,57 @@ html[data-world="ready"] .hero-fallback {
 }
 
 /* ---- Legibility over the 3D world ---------------------------------------------------------------------------
-   Only when the 3D world is showing. Deliberately NOT a panel or veil behind each section (that read as a "box" sitting
-   on top of the scene and dulled it everywhere, not just behind the letters). Instead every word gets its own halo: a
-   stack of text-shadows in the page background colour, tight and near-solid close to each glyph, widening and fading
-   further out. That reads as a soft glow, not an edge, so the 3D stays fully visible around and between lines of text
-   while the text itself is always legible, wherever a bright building or route line happens to sit behind it. Cards and
-   chips already have solid backgrounds so this is a no-op there; it costs nothing per frame since it is static CSS. */
-html[data-world="ready"] section:not(#hero) :is(h2, h3, p, li, dt, dd) {
-  /* A real stroke, not just a blurred shadow: it paints solid background colour right along each glyph's own outline, so
-     even a bright, saturated shape passing directly behind a letter (a lit window, a milestone gate's light bar) is fully
-     covered, including in the narrow gaps between letters that a shadow's blur alone left showing through. paint-order
-     keeps the actual text colour on top, so the stroke reads as a tight halo, not a bolder font. */
-  -webkit-text-stroke: 5px hsl(var(--background));
-  paint-order: stroke fill;
-  text-shadow:
-    0 0 10px hsl(var(--background)),
-    0 0 20px hsl(var(--background) / 0.85),
-    0 0 32px hsl(var(--background) / 0.6);
+   Only when the 3D world is showing (otherwise both variants below are inert: no visual change on the fallback
+   path). Two treatments, alternated section to section by whichever section passes variant="scrim" to <Section>,
+   so the page doesn't read as one repeating "text in a box" module all the way down -- that repetition was flagged
+   as dull even though each individual panel was legible. Both variants do the same two jobs (legible backdrop +
+   "dim the world behind active content" column mask, via their own opacity/gradient) but read differently:
+   .section-panel is a bounded glass card; .section-scrim has no edges at all, just a soft tonal cloud that thins
+   out at its own top and bottom, so the world visibly bleeds into it rather than sitting behind a hard rectangle. */
+html[data-world="ready"] .section-panel {
+  background: hsl(var(--background) / 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid hsl(var(--border) / 0.5);
+  box-shadow:
+    0 24px 60px -24px hsl(var(--primary) / 0.22),
+    inset 0 1px 0 hsl(var(--foreground) / 0.05);
+}
+.section-panel {
+  border-radius: 1.75rem;
+}
+html[data-world="ready"] .section-panel {
+  padding: 2.5rem 1.5rem;
+}
+@media (min-width: 640px) {
+  html[data-world="ready"] .section-panel {
+    padding: 3.25rem 3rem;
+  }
+}
+
+/* Fixed-rem fade (not a percentage of the panel's own height): the transparent zone is always exactly the outer
+   ~2.5rem, which is also roughly the panel's own top/bottom padding -- so the fade can only ever soften the panel's
+   silhouette, never fall across a heading or a line of body text regardless of how tall a given section's content
+   is. The solid zone is 0.92, higher than .section-panel's 0.82: a scrim has no border/shadow to help it read as a
+   surface, so its own backdrop has to be at least as protective against whatever 3D is passing behind it. */
+html[data-world="ready"] .section-scrim {
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    hsl(var(--background) / 0.92) 2.5rem,
+    hsl(var(--background) / 0.92) calc(100% - 2.5rem),
+    transparent 100%
+  );
+  backdrop-filter: blur(11px);
+  -webkit-backdrop-filter: blur(11px);
+}
+html[data-world="ready"] .section-scrim {
+  padding: 2.5rem 1.5rem;
+}
+@media (min-width: 640px) {
+  html[data-world="ready"] .section-scrim {
+    padding: 3.25rem 3rem;
+  }
 }
 
 /* ---- Project pods ----------------------------------------------------------------------------------------------
@@ -362,9 +398,62 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   }
 }
 
+/* ---- HUD micro-labels ----------------------------------------------------------------------------------------
+   Diegetic-dashboard labels naming the 3D world's structures (drei's Html, projected each frame; opacity is set
+   imperatively in useFrame, not React state). Same visual language as the "requests served" line: a small dot,
+   monospace, muted. Never intercepts clicks -- both the label and its Html wrapper are pointer-events: none. */
+.hud-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  transition: opacity 0.4s ease;
+}
+.hud-label__line {
+  position: relative;
+  width: 18px;
+  height: 1px;
+  background: hsl(var(--primary) / 0.7);
+}
+.hud-label__line::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: -1.5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+}
+
 .no-scrollbar {
   scrollbar-width: none;
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Thin, unobtrusive scrollbar for internal scroll panels (assistant chat, command palettes) -- replaces the
+   browser's default wide one, which read as an unstyled leftover next to everything else on the site. */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, hsl(var(--foreground)) 18%, transparent);
+  border-radius: 3px;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, hsl(var(--foreground)) 30%, transparent);
 }

@@ -156,7 +156,7 @@ export function CommandPalette({ contacts, resume }: { contacts: ContactLink[]; 
                 className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </div>
-            <ul className="max-h-72 overflow-y-auto p-2" role="listbox">
+            <ul className="thin-scroll max-h-72 overflow-y-auto p-2" role="listbox">
               {filtered.length === 0 && <li className="px-3 py-6 text-center text-sm text-muted-foreground">No results</li>}
               {filtered.map((cmd, i) => (
                 <li key={cmd.id} role="option" aria-selected={i === index}>

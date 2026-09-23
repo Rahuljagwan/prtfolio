@@ -18,9 +18,11 @@ const LOCK_OPEN_AT = 0.2;
 const ARRIVE = [LOCK_OPEN_AT, ...Array.from({ length: 4 }, (_, k) => START + k * SEG + SEG * MOVE)];
 const RESOLVED_AT = START + 4 * SEG + SEG * MOVE; // the shackle closes
 
+// Green family (the world's own "healthy/steady" colour -- the 3D Stack zone already uses this same hue for its DB
+// Vault), not the purple/magenta this pod used before the palette lock: nothing on this site is pink.
 const COLORS = {
-  dark: { dim: "#5c5480", lit: "#d88bf0", ring: "#c86bff", packet: "#fbeeff", track: "#443c68", tab: "#7a6fb0" },
-  light: { dim: "#cbc0e0", lit: "#a531c9", ring: "#8a2fb0", packet: "#5c1478", track: "#ddd0ea", tab: "#9a86c4" },
+  dark: { dim: "#3f5f4e", lit: "#34e08a", ring: "#7dfab5", packet: "#eafff2", track: "#274536", tab: "#4f8a6d" },
+  light: { dim: "#c3ded0", lit: "#0e6b48", ring: "#128057", packet: "#08402b", track: "#dceee4", tab: "#5b9678" },
 };
 
 /** Path position (0 = lock, HOPS = back at the lock) at time t within the cycle. Eases in and out of every hop. */

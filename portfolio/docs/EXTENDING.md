@@ -70,11 +70,15 @@ That is the whole list: no new API routes, no new admin screens.
 
 | type | Stored as | Editor |
 |---|---|---|
-| `text` | `String` | single-line input |
-| `textarea` | `String` | multi-line input |
+| `text` | `String` | single-line input, with a voice-dictation mic button |
+| `textarea` | `String` | multi-line input, with a voice-dictation mic button |
 | `select` | `String` | dropdown (`options: [...]`) |
-| `list` | `String[]` | add / remove / reorder items |
-| `objects` | `Json` | repeatable group of sub-fields (`of: [...]`) |
+| `list` | `String[]` | drag-to-reorder items. `style: "rows"` (default) for prose, one item per line; `style: "chips"` for tag-like values (a flex-wrap pill editor with Enter-to-add) |
+| `objects` | `Json` | drag-to-reorder repeatable group of sub-fields (`of: [...]`), each rendered with the same field types recursively |
+
+Voice input, drag-reorder and client-side validation (mirroring the same `schemaFor()` schema used server-side) are
+all generic — every field of a given type gets them automatically, with no per-resource wiring. Adding a 9th
+resource is still exactly the one-array-edit described above.
 
 ## Sections that are one-off rather than lists
 

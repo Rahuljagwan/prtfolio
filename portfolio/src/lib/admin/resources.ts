@@ -8,7 +8,7 @@ export type Field =
   | { name: string; label: string; type: "text"; max?: number; hint?: string; optional?: boolean }
   | { name: string; label: string; type: "textarea"; max?: number; hint?: string; optional?: boolean }
   | { name: string; label: string; type: "select"; options: string[] }
-  | { name: string; label: string; type: "list"; hint?: string } // string[]
+  | { name: string; label: string; type: "list"; hint?: string; style?: "chips" | "rows" } // string[]. style defaults to "rows"; "chips" suits genuinely tag-like fields.
   | { name: string; label: string; type: "objects"; of: Field[]; hint?: string }; // [{...}] with sub-fields
 
 export interface Resource {
@@ -40,7 +40,7 @@ export const RESOURCES: Resource[] = [
       { name: "summary", label: "Summary", type: "textarea", max: 600 },
       { name: "role", label: "Your role", type: "text", max: 120 },
       { name: "highlights", label: "Highlights", type: "list", hint: "One point per line item" },
-      { name: "stack", label: "Tech stack", type: "list", hint: "One technology per item" },
+      { name: "stack", label: "Tech stack", type: "list", hint: "One technology per item", style: "chips" },
       { name: "challenge", label: "Case study: the challenge (optional)", type: "textarea", max: 600, optional: true, hint: "What problem did this solve? Fill any of the three case-study fields to show a Case study button on the card." },
       { name: "approach", label: "Case study: what I did (optional)", type: "list", hint: "One step per item" },
       { name: "outcome", label: "Case study: the outcome (optional)", type: "textarea", max: 600, optional: true },
@@ -59,7 +59,7 @@ export const RESOURCES: Resource[] = [
       { name: "period", label: "Period", type: "text", max: 60, hint: "e.g. Dec 2025 – Present" },
       { name: "location", label: "Location", type: "text", max: 80 },
       { name: "bullets", label: "Responsibilities and achievements", type: "list" },
-      { name: "stack", label: "Tech used", type: "list" },
+      { name: "stack", label: "Tech used", type: "list", style: "chips" },
     ],
   },
   {
@@ -70,7 +70,7 @@ export const RESOURCES: Resource[] = [
     titleField: "name",
     fields: [
       { name: "name", label: "Group name", type: "text", max: 60 },
-      { name: "skills", label: "Skills", type: "list" },
+      { name: "skills", label: "Skills", type: "list", style: "chips" },
     ],
   },
   {
@@ -98,7 +98,7 @@ export const RESOURCES: Resource[] = [
       { name: "title", label: "Title", type: "text", max: 120 },
       { name: "period", label: "Label / period", type: "text", max: 60, hint: "e.g. Going live, Now, Next" },
       { name: "description", label: "Description", type: "textarea", max: 400 },
-      { name: "tags", label: "Tags", type: "list", hint: "Technologies or themes" },
+      { name: "tags", label: "Tags", type: "list", hint: "Technologies or themes", style: "chips" },
       { name: "status", label: "Status", type: "select", options: ["done", "current", "next"] },
     ],
   },

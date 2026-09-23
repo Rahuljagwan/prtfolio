@@ -39,7 +39,7 @@ const config: Config = {
         "spin-slow": { to: { transform: "rotate(360deg)" } },
         drift: {
           "0%, 100%": { transform: "translate3d(0, 0, 0) scale(1)" },
-          "50%": { transform: "translate3d(2%, -3%, 0) scale(1.06)" },
+          "50%": { transform: "translate3d(3.5%, -4%, 0) scale(1.09)" },
         },
       },
       animation: {

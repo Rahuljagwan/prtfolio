@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Field } from "@/lib/admin/resources";
-import { ApiError, formatIssues } from "./client";
+import { schemaFor } from "@/lib/admin/resources";
+import { ApiError, fieldErrors, formatIssues } from "./client";
+import { FieldShell } from "./ui/FieldShell";
+import { FieldInput } from "./ui/FieldInput";
+import { Button } from "./ui/Button";
 
 type Values = Record<string, unknown>;
-
-const inputClass =
-  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary";
 
 /** Empty value for a field, used when creating a new row or a new item in an objects list. */
 export function emptyValues(fields: Field[]): Values {
@@ -17,149 +17,137 @@ export function emptyValues(fields: Field[]): Values {
   );
 }
 
-function move<T>(arr: T[], from: number, to: number) {
-  if (to < 0 || to >= arr.length) return arr;
-  const next = [...arr];
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
-  return next;
-}
-
-function IconButton({ label, onClick, disabled, children }: React.PropsWithChildren<{ label: string; onClick: () => void; disabled?: boolean }>) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      disabled={disabled}
-      className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
-    >
-      {children}
-    </button>
-  );
-}
-
-function FieldInput({ field, value, onChange }: { field: Field; value: unknown; onChange: (v: unknown) => void }) {
-  const id = `f-${field.name}`;
-
-  switch (field.type) {
-    case "text":
-      return <input id={id} className={inputClass} value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} />;
-    case "textarea":
-      return <textarea id={id} rows={3} className={inputClass} value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} />;
-    case "select":
-      return (
-        <select id={id} className={inputClass} value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)}>
-          {field.options.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      );
-    case "list": {
-      const items = (value as string[]) ?? [];
-      return (
-        <div className="space-y-2">
-          {items.map((item, i) => (
-            <div key={i} className="flex items-start gap-1">
-              <textarea
-                aria-label={`${field.label} ${i + 1}`}
-                rows={item.length > 90 ? 3 : 1}
-                className={inputClass}
-                value={item}
-                onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))}
-              />
-              <IconButton label="Move up" disabled={i === 0} onClick={() => onChange(move(items, i, i - 1))}>
-                <ArrowUp size={14} />
-              </IconButton>
-              <IconButton label="Move down" disabled={i === items.length - 1} onClick={() => onChange(move(items, i, i + 1))}>
-                <ArrowDown size={14} />
-              </IconButton>
-              <IconButton label="Remove" onClick={() => onChange(items.filter((_, j) => j !== i))}>
-                <Trash2 size={14} />
-              </IconButton>
-            </div>
-          ))}
-          <button type="button" onClick={() => onChange([...items, ""])} className="inline-flex items-center gap-1.5 text-sm text-primary">
-            <Plus size={14} /> Add item
-          </button>
-        </div>
-      );
-    }
-    case "objects": {
-      const items = (value as Values[]) ?? [];
-      return (
-        <div className="space-y-3">
-          {items.map((item, i) => (
-            <div key={i} className="space-y-3 rounded-xl border border-border p-3">
-              {field.of.map((sub) => (
-                <label key={sub.name} className="block text-xs text-muted-foreground">
-                  {sub.label}
-                  <div className="mt-1 text-foreground">
-                    <FieldInput
-                      field={sub}
-                      value={item[sub.name]}
-                      onChange={(v) => onChange(items.map((x, j) => (j === i ? { ...x, [sub.name]: v } : x)))}
-                    />
-                  </div>
-                </label>
-              ))}
-              <div className="flex justify-end">
-                <IconButton label="Remove" onClick={() => onChange(items.filter((_, j) => j !== i))}>
-                  <Trash2 size={14} />
-                </IconButton>
-              </div>
-            </div>
-          ))}
-          <button type="button" onClick={() => onChange([...items, emptyValues(field.of)])} className="inline-flex items-center gap-1.5 text-sm text-primary">
-            <Plus size={14} /> Add
-          </button>
-        </div>
-      );
-    }
-  }
-}
-
 interface FieldFormProps {
   fields: Field[];
   initial: Values;
   submitLabel: string;
   onSubmit: (values: Values) => Promise<void>;
   onCancel?: () => void;
+  /** When set, drafts are debounce-saved to localStorage under this key and offered back on mount if unsaved. */
+  draftKey?: string;
 }
 
-export function FieldForm({ fields, initial, submitLabel, onSubmit, onCancel }: FieldFormProps) {
+const draftStorageKey = (key: string) => `admin-draft:${key}`;
+
+export function FieldForm({ fields, initial, submitLabel, onSubmit, onCancel, draftKey }: FieldFormProps) {
   const [values, setValues] = useState<Values>(initial);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
+  const [draftBanner, setDraftBanner] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const firstFieldRef = useRef<HTMLDivElement>(null);
+
+  const schema = useMemo(() => schemaFor(fields), [fields]);
+  const validation = useMemo(() => schema.safeParse(values), [schema, values]);
+  const clientErrors = validation.success ? {} : fieldErrors(validation.error.issues.map((i) => ({ path: i.path as (string | number)[], message: i.message })));
+
+  // Auto-focus the first field whenever a form mounts -- covers both "the Add/Edit modal just opened" and
+  // "this singleton editor's tab just became active", with no special-casing per caller.
+  useEffect(() => {
+    firstFieldRef.current?.querySelector<HTMLElement>("input, textarea, select")?.focus();
+  }, []);
+
+  // Autosave draft (opt-in via draftKey): debounced write, offered back on mount if it differs from initial.
+  useEffect(() => {
+    if (!draftKey) return;
+    const raw = localStorage.getItem(draftStorageKey(draftKey));
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (JSON.stringify(parsed) !== JSON.stringify(initial)) setDraftBanner(true);
+      } catch {
+        localStorage.removeItem(draftStorageKey(draftKey));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey) return;
+    const t = setTimeout(() => localStorage.setItem(draftStorageKey(draftKey), JSON.stringify(values)), 800);
+    return () => clearTimeout(t);
+  }, [draftKey, values]);
+
+  const clearDraft = () => draftKey && localStorage.removeItem(draftStorageKey(draftKey));
+
+  // Cmd/Ctrl+S submits whichever form the user is actually in.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s" && formRef.current?.contains(document.activeElement)) {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validation.success) {
+      setTouched(new Set(fields.map((f) => f.name)));
+      const firstInvalid = fields.find((f) => clientErrors[f.name]);
+      if (firstInvalid) formRef.current?.querySelector<HTMLElement>(`#f-${firstInvalid.name}`)?.focus();
+      return;
+    }
     setSaving(true);
     setErrors([]);
+    setServerFieldErrors({});
     try {
       await onSubmit(values);
+      clearDraft();
     } catch (err) {
       const e = err as ApiError;
       setErrors(e.issues?.length ? formatIssues(e.issues) : [e.message || "Something went wrong"]);
+      setServerFieldErrors(e.issues?.length ? fieldErrors(e.issues) : {});
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <form onSubmit={submit} className="space-y-5">
-      {fields.map((f) => (
-        <div key={f.name}>
-          <label htmlFor={`f-${f.name}`} className="mb-1.5 block text-sm font-medium">
-            {f.label}
-          </label>
-          {"hint" in f && f.hint && <p className="mb-1.5 text-xs text-muted-foreground">{f.hint}</p>}
-          <FieldInput field={f} value={values[f.name]} onChange={(v) => setValues((prev) => ({ ...prev, [f.name]: v }))} />
+    <form ref={formRef} onSubmit={submit} className="space-y-5">
+      {draftBanner && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+          <span>Unsaved draft found from an earlier session.</span>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => {
+                const raw = draftKey && localStorage.getItem(draftStorageKey(draftKey));
+                if (raw) setValues(JSON.parse(raw));
+                setDraftBanner(false);
+              }}
+            >
+              Restore
+            </button>
+            <button
+              type="button"
+              className="text-muted-foreground hover:underline"
+              onClick={() => {
+                clearDraft();
+                setDraftBanner(false);
+              }}
+            >
+              Discard
+            </button>
+          </div>
         </div>
-      ))}
+      )}
+
+      {fields.map((f, i) => {
+        const error = touched.has(f.name) ? clientErrors[f.name] ?? serverFieldErrors[f.name] : serverFieldErrors[f.name];
+        return (
+          <div key={f.name} ref={i === 0 ? firstFieldRef : undefined} onBlur={() => setTouched((prev) => new Set(prev).add(f.name))}>
+            <FieldShell label={f.label} htmlFor={`f-${f.name}`} hint={"hint" in f ? f.hint : undefined} error={error}>
+              <FieldInput fieldId={`f-${f.name}`} field={f} value={values[f.name]} onChange={(v) => setValues((prev) => ({ ...prev, [f.name]: v }))} />
+            </FieldShell>
+          </div>
+        );
+      })}
 
       {errors.length > 0 && (
         <ul role="alert" className="space-y-1 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
@@ -171,17 +159,13 @@ export function FieldForm({ fields, initial, submitLabel, onSubmit, onCancel }: 
 
       <div className="flex justify-end gap-2">
         {onCancel && (
-          <button type="button" onClick={onCancel} className="rounded-full border border-border px-5 py-2 text-sm hover:bg-muted">
+          <Button type="button" variant="ghost" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         )}
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-        >
+        <Button type="submit" disabled={saving}>
           {saving ? "Saving..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

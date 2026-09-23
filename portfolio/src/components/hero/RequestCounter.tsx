@@ -44,19 +44,22 @@ export function RequestCounter() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <p aria-hidden className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-        <span className="relative flex h-1.5 w-1.5">
+    <div className="inline-flex flex-wrap items-center rounded-xl border border-border/70 bg-card/40 pl-3.5 pr-2 py-2">
+      <p aria-hidden className="flex items-center gap-2 whitespace-nowrap font-mono text-sm text-foreground/90">
+        <span className="relative flex h-2 w-2 shrink-0">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60 motion-reduce:animate-none" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
         </span>
-        requests served: {count.toLocaleString()}
+        requests served: <span className="font-semibold">{count.toLocaleString()}</span>
       </p>
+      {/* A segment divider, not just a gap: makes the stat and the action read as two parts of one instrument
+          rather than two loose pieces of text sharing a border. */}
+      <span aria-hidden className="mx-3 h-4 w-px shrink-0 bg-border" />
       <button
         type="button"
         onClick={send}
         disabled={sending}
-        className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
+        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
       >
         {sending ? "sending..." : "send a request"}
         <ArrowUpRight size={12} aria-hidden />

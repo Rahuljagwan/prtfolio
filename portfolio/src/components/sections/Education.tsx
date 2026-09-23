@@ -9,7 +9,7 @@ export function Education({ items }: { items: EducationEntry[] }) {
   if (items.length === 0) return null;
 
   return (
-    <Section id="education" eyebrow="Education" title="Where I studied.">
+    <Section id="education" eyebrow="Education" title="Where I studied." variant="scrim">
       <div className="grid gap-5 md:grid-cols-2">
         {items.map((e, i) => (
           <Reveal key={e.id} delay={i * 0.08} className="h-full">

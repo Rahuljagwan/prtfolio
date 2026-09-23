@@ -1,0 +1,142 @@
+/* ------------------------------------------------------------------
+   The Living System — base styles
+   Palette lock: near-black bg, blue-grey surfaces,
+   accents: electric green (healthy) + amber (warning). Red = incidents only.
+------------------------------------------------------------------- */
+:root {
+  --bg: #0a0a12;
+  --surface: #14141f;
+  --text: #e8e8f0;
+  --text-dim: #8a8aa0;
+  --accent: #3dffa0;   /* electric green */
+  --warn: #ffb347;     /* amber */
+  --danger: #ff4d5e;   /* incidents only */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Scroll happens on body — the tall spacer div creates the range. */
+}
+
+/* The WebGL canvas stays fixed; the page scrolls "through" it. */
+.canvas-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Tall invisible spacer = scroll range. Height set from JS (sections × 100vh). */
+.scroll-space {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  width: 100%;
+}
+
+/* ---------- DOM overlay cards (one per station) ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+}
+
+.section-card {
+  position: absolute;
+  max-width: 420px;
+  padding: 28px 32px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid #ffffff14;
+  border-radius: 14px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+}
+
+.section-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.section-card .kicker {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.section-card h2 {
+  font-size: 26px;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.section-card p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* Card positions per section (left / right alternation) */
+.section-card[data-side='left']  { left: 6vw; }
+.section-card[data-side='right'] { right: 6vw; }
+.section-card[data-side='center'] {
+  left: 50%;
+  transform: translate(-50%, 24px);
+}
+.section-card[data-side='center'].visible {
+  transform: translate(-50%, 0);
+}
+
+/* ---------- HUD bits ---------- */
+.hud-progress {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hud-progress .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff22;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.hud-progress .dot.active {
+  background: var(--accent);
+  transform: scale(1.35);
+}
+
+.scroll-hint {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  animation: pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}

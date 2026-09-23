@@ -131,7 +131,7 @@ export function AssistantChat({ name, suggestions, llm, onPhase, onSourceHover, 
   return (
     <div className={cn("assistant-panel flex min-h-[26rem] min-w-0 flex-col rounded-3xl border border-border bg-background/60 shadow-xl", className)}>
       {/* Conversation. aria-live announces new answers to screen readers. */}
-      <div role="log" aria-live="polite" aria-label="Conversation" className="flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6">
+      <div role="log" aria-live="polite" aria-label="Conversation" className="thin-scroll flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6">
         {empty && (
           <div className="py-2">
             <Reveal>

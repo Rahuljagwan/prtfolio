@@ -6,7 +6,7 @@ import type { Experience as ExperienceItem } from "@/lib/types";
 
 export function Experience({ items }: { items: ExperienceItem[] }) {
   return (
-    <Section id="experience" eyebrow="Experience" title="Where I have worked.">
+    <Section id="experience" eyebrow="Experience" title="Where I have worked." variant="scrim">
       <div className="relative">
         <TimelineProgress />
         <ol className="space-y-12 pl-8 md:pl-12">

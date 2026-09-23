@@ -25,4 +25,14 @@ export function formatIssues(issues: ApiError["issues"]) {
   return issues.map((i) => `${i.path.join(" › ")}: ${i.message}`);
 }
 
+/** Same zod issues as formatIssues, but keyed by top-level field name for inline per-field errors. */
+export function fieldErrors(issues: ApiError["issues"]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const i of issues) {
+    const key = String(i.path[0] ?? "");
+    if (key && !out[key]) out[key] = i.message;
+  }
+  return out;
+}
+
 export type Row = { id: string } & Record<string, unknown>;

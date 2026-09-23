@@ -22,7 +22,7 @@ export function Contact({ contacts }: { contacts: ContactLink[] }) {
   const items = ORDER.map((t) => findContact(contacts, t)).filter((c): c is ContactLink => !!c);
 
   return (
-    <Section id="contact" eyebrow="Contact" title="Let's talk.">
+    <Section id="contact" eyebrow="Contact" title="Let's talk." variant="scrim">
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:col-span-3">
           {items.map((c, i) => {

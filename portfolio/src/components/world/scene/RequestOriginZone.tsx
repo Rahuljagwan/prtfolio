@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import { BoxGeometry, Color, type InstancedMesh, Matrix4, MeshBasicMaterial, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
 import { SEND_REQUEST_EVENT } from "@/lib/world/events";
@@ -122,6 +123,18 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
   // the thing that was clicked, not from the camera curve's first control point (a different location in world space).
   const launchFrom = useRef(new Vector3());
   const packet = useRef<THREE.Group>(null);
+  // ---- HUD micro-labels: "the world introduces itself." Two diegetic labels, hero only for this pass (the same
+  // system extends to later zones next). Plain DOM (via drei's Html, which re-projects its 3D anchor every frame),
+  // so this never enters the eagerly-loaded bundle -- it lives inside this already-lazy-loaded 3D chunk, same as
+  // everything else here. Opacity is driven by refs in useFrame, not React state, so labelling never causes a
+  // re-render.
+  const originLabelRef = useRef<HTMLDivElement>(null);
+  const pathLabelRef = useRef<HTMLDivElement>(null);
+  const pathAnchor = useMemo(() => {
+    const p = curves.position.getPoint(0.035); // a little ahead of the camera's own start (t=0), where the route line is actually visible in the hero frame
+    p.y -= 1.3;
+    return p;
+  }, [curves]);
   const trailMesh = useRef<InstancedMesh>(null);
   const packetMat = useMemo(() => new MeshBasicMaterial({ color: "#eafff2", transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }), []);
   const haloMat = useMemo(() => new MeshBasicMaterial({ transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }), []);
@@ -185,6 +198,12 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
       g.rotation.y += (pointer.current.x * 0.4 * weight - g.rotation.y) * Math.min(1, dt * 3);
       g.rotation.x += (-pointer.current.y * 0.25 * weight - g.rotation.x) * Math.min(1, dt * 3);
     }
+
+    // HUD labels: fade with the same "is this zone actually the one on screen" curve as the pointer parallax above,
+    // so they're gone well before the camera reaches the Gate -- introducing the metaphor, not narrating the whole trip.
+    const labelOpacity = clamp01(1 - shared.current.u * 2.2).toFixed(3);
+    if (originLabelRef.current) originLabelRef.current.style.opacity = labelOpacity;
+    if (pathLabelRef.current) pathLabelRef.current.style.opacity = labelOpacity;
     if (core.current) {
       core.current.rotation.y += dt * 0.18;
       const pulse = 1 + Math.sin(performance.now() * 0.0022) * 0.035; // a slow breathing scale, not a spin: reads as alive, not decorative
@@ -276,7 +295,24 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
           </bufferGeometry>
           <pointsMaterial color={palette.accent} size={0.032} sizeAttenuation transparent opacity={0.55} depthWrite={false} />
         </points>
+
+        {/* HUD: names the sphere. A child of this group so it tracks the node's own animated x-position for free. */}
+        <Html position={[0, 1.7, 0]} center wrapperClass="pointer-events-none" zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
+          <div ref={originLabelRef} className="hud-label" style={{ opacity: 0 }}>
+            <span className="hud-label__line" aria-hidden />
+            origin node
+          </div>
+        </Html>
       </group>
+
+      {/* HUD: names the route. Scene-root, not parented -- anchored to a fixed point just ahead of the camera's own
+          start, where the route line is actually visible in the hero frame. */}
+      <Html position={pathAnchor} center wrapperClass="pointer-events-none" zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
+        <div ref={pathLabelRef} className="hud-label" style={{ opacity: 0 }}>
+          <span className="hud-label__line" aria-hidden />
+          request path &#8595;
+        </div>
+      </Html>
 
       {/* The travelling request: world-space, not parented under the node above. */}
       <instancedMesh ref={trailMesh} args={[undefined, undefined, TRAIL]} frustumCulled={false} renderOrder={2000} material={trailMat}>

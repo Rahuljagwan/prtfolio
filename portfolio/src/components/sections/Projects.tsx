@@ -45,7 +45,7 @@ function Cover({ index, motif }: { index: number; motif: string }) {
 
 export function Projects({ items }: { items: Project[] }) {
   return (
-    <Section id="projects" eyebrow="Projects" title="Selected work.">
+    <Section id="projects" eyebrow="Projects" title="Selected work." variant="scrim">
       <div className="grid gap-5 lg:grid-cols-3">
         {items.map((p, i) => {
           const caseStudy = hasCaseStudy(p);

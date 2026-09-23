@@ -3,7 +3,9 @@
 import { useRef, useState } from "react";
 import { FileText, Trash2, Upload } from "lucide-react";
 import { RESUME_KINDS, RESUME_TYPES, MAX_RESUME_BYTES, type ResumeKind } from "@/lib/resume";
-import { adminFetch } from "./client";
+import { setAdminStatus } from "@/lib/admin/status";
+import { useAdminMutation } from "./useAdminMutation";
+import { useToast } from "./ui/Toast";
 
 export interface ResumeMeta {
   kind: string;
@@ -18,16 +20,17 @@ function Slot({ kind, initial }: { kind: ResumeKind; initial?: ResumeMeta }) {
   const type = RESUME_TYPES[kind];
   const [file, setFile] = useState<ResumeMeta | undefined>(initial);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const adminFetch = useAdminMutation();
+  const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
 
   const upload = async (picked: File) => {
-    setMessage(null);
     if (picked.size > MAX_RESUME_BYTES) {
-      setMessage({ text: "File is too large. The limit is 3 MB.", error: true });
+      toast({ tone: "error", message: "File is too large. The limit is 3 MB." });
       return;
     }
     setBusy(true);
+    setAdminStatus("pending");
     try {
       const body = new FormData();
       body.append("file", picked);
@@ -35,9 +38,11 @@ function Slot({ kind, initial }: { kind: ResumeKind; initial?: ResumeMeta }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? `Upload failed (${res.status})`);
       setFile(data);
-      setMessage({ text: "Uploaded. The site is updated." });
+      setAdminStatus("success");
+      toast({ tone: "success", message: "Uploaded. The site is updated." });
     } catch (e) {
-      setMessage({ text: (e as Error).message, error: true });
+      setAdminStatus("error");
+      toast({ tone: "error", message: (e as Error).message });
     } finally {
       setBusy(false);
       if (input.current) input.current.value = "";
@@ -50,9 +55,9 @@ function Slot({ kind, initial }: { kind: ResumeKind; initial?: ResumeMeta }) {
     try {
       await adminFetch(`/api/admin/resume/${kind}`, "DELETE");
       setFile(undefined);
-      setMessage({ text: "Removed." });
+      toast({ tone: "success", message: "Removed." });
     } catch (e) {
-      setMessage({ text: (e as Error).message, error: true });
+      toast({ tone: "error", message: (e as Error).message });
     } finally {
       setBusy(false);
     }
@@ -100,10 +105,6 @@ function Slot({ kind, initial }: { kind: ResumeKind; initial?: ResumeMeta }) {
           <Upload size={15} aria-hidden />
           {busy ? "Working..." : file ? `Replace ${type.label}` : `Upload ${type.label}`}
         </label>
-        {/* Fixed-height slot so nothing jumps when a message appears. */}
-        <p role="status" aria-live="polite" className={`min-h-5 text-sm ${message?.error ? "text-red-500" : "text-muted-foreground"}`}>
-          {message?.text}
-        </p>
       </div>
     </section>
   );

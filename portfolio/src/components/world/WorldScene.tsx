@@ -9,7 +9,8 @@ import { ZONES } from "@/lib/world/zones";
 import { PALETTE } from "./scene/palette";
 import { RigDriver, type RigShared } from "./scene/RigDriver";
 import { ProjectPods } from "./scene/pods/ProjectPods";
-import { RouteDust, RouteLine, RouteRings } from "./scene/RouteAndDust";
+import { RouteDust, RouteFlow, RouteLine } from "./scene/RouteAndDust";
+import { GroundPlane } from "./scene/GroundPlane";
 import { CityZone } from "./scene/CityZone";
 import { DeploymentsZone } from "./scene/DeploymentsZone";
 import { FoundationZone } from "./scene/FoundationZone";
@@ -75,9 +76,10 @@ function World({ dark, host, layouts, onReady }: Pick<WorldSceneProps, "dark" | 
       <RigDriver curves={curves} layouts={layouts} host={host} shared={shared} onReady={onReady} />
       <ambientLight intensity={dark ? 0.5 : 0.9} />
       <directionalLight position={[4, 5, 6]} intensity={dark ? 2.2 : 1.6} />
-      <RouteLine curves={curves} palette={palette} />
-      <RouteRings curves={curves} palette={palette} />
-      <RouteDust curves={curves} palette={palette} count={1900} />
+      <RouteLine curves={curves} palette={palette} shared={shared} />
+      <RouteDust curves={curves} palette={palette} count={550} shared={shared} />
+      <RouteFlow curves={curves} palette={palette} shared={shared} />
+      <GroundPlane palette={palette} shared={shared} />
       <RequestOriginZone palette={palette} curves={curves} shared={shared} />
       <FoundationZone palette={palette} dark={dark} curves={curves} shared={shared} />
       <CityZone palette={palette} dark={dark} curves={curves} shared={shared} />
