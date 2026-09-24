@@ -17,7 +17,7 @@ const body = z.object({ question: z.string().trim().min(1).max(MAX_QUESTION_CHAR
 let cache: { at: number; data: Portfolio } | null = null;
 async function content(): Promise<Portfolio> {
   if (cache && Date.now() - cache.at < 5_000) return cache.data;
-  const data = await getPortfolio();
+  const data = await getPortfolio({ samples: false }); // the assistant only ever knows real content
   cache = { at: Date.now(), data };
   return data;
 }

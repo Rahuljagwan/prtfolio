@@ -37,8 +37,8 @@ const mat = () => new MeshBasicMaterial({ transparent: true, depthTest: false, d
  * stage it reaches lights up and stamps a ring outward (the audit trail), and the last one bursts and draws a check
  * mark. Then the run fades and starts over. Hovering the card speeds the run up (1.5x). Everything eases; nothing is linear.
  */
-export function PipelinePod({ index, dark, shared, pod }: { index: number; dark: boolean; shared: MutableRefObject<RigShared>; pod: PodShared }) {
-  const { group, ctl } = usePodStage(index, shared, pod);
+export function PipelinePod({ stageKey, dark, shared, pod }: { stageKey: string; dark: boolean; shared: MutableRefObject<RigShared>; pod: PodShared }) {
+  const { group, ctl } = usePodStage(stageKey, shared, pod, 2); // a wide strip: laid out for a window at least twice as wide as tall
   const inner = useRef<Group>(null);
   const nodeGroups = useRef<(Group | null)[]>([]);
   const nodeSolids = useRef<(Mesh | null)[]>([]);
@@ -78,12 +78,6 @@ export function PipelinePod({ index, dark, shared, pod }: { index: number; dark:
 
   useEffect(() => () => gridGeo.dispose(), [gridGeo]);
 
-  // Mark the card as having a pod, so CSS clears the cover and card background and the pod shows through.
-  useEffect(() => {
-    const el = document.querySelectorAll<HTMLElement>("[data-pod-stage]")[index];
-    el?.setAttribute("data-pod", "on");
-    return () => el?.removeAttribute("data-pod");
-  }, [index]);
 
   useEffect(() => {
     const C = dark ? COLORS.dark : COLORS.light;

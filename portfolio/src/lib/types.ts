@@ -29,6 +29,30 @@ export interface Experience {
   stack: string[];
 }
 
+export type ProjectStatus = "live" | "maintained" | "in-development" | "archived";
+
+/** Which lifecycle stages the author owned. A stage left undefined means "not stated", which is shown as unknown, never guessed. */
+export interface ProjectOwnership {
+  build?: boolean;
+  ship?: boolean;
+  run?: boolean;
+}
+
+export interface ProjectMetric {
+  label: string;
+  value: string;
+}
+
+export interface ProjectDecision {
+  title: string;
+  chose: string;
+  rejected: string[];
+  why: string;
+}
+
+/** Sections of a project whose content is illustrative. The UI shows a "Sample" chip on each one. */
+export type SampleField = "metrics" | "decisions" | "constraints" | "deployment" | "retrospective";
+
 export interface Project {
   id: string;
   title: string;
@@ -40,6 +64,41 @@ export interface Project {
   challenge?: string | null;
   approach?: string[];
   outcome?: string | null;
+
+  // ---- Enrichment (src/content/projects-meta.ts, merged in by lib/projects/enrich.ts). None of these exist in the database.
+  /** URL segment for /projects/[slug]. Derived from the title, so it survives only as long as the title (see TITLE_TO_SLUG). */
+  slug?: string;
+  featured?: boolean;
+  status?: ProjectStatus;
+  /** Freeform, shown on the timeline (for example "2025"). */
+  period?: string;
+  /** "YYYY-MM" or an ISO date. */
+  lastDeployed?: string;
+  ownership?: ProjectOwnership;
+  links?: { live?: string; repo?: string };
+  categories?: string[];
+  constraints?: string[];
+  deployment?: string[];
+  metrics?: ProjectMetric[];
+  decisions?: ProjectDecision[];
+  /** "What I would change" bullet points. */
+  retrospective?: string[];
+  /** What the author says they learned from the project (the resume's "Key learnings"). */
+  learnings?: string;
+  /** Which of the fields above hold illustrative content. */
+  sampleFields?: SampleField[];
+  /**
+   * Set by the server when a project is confidential. Everything private has already been removed from the object
+   * (redaction happens in getPortfolio, never in a client component, so hidden text never reaches the browser);
+   * `bars` only carries quantised widths so the UI can draw blackout bars of a believable length.
+   */
+  confidential?: { publicSummary: string; bars: number[] };
+  /** Which 3D cover motif to use (pipeline | network | vault). Projects without one keep the CSS cover. */
+  motif?: string;
+  /** Which per-project 3D schematic the Projects flight shows (see lib/projects/exhibits.ts). Without one it shows a generic rack of the project's stack. */
+  exhibit?: string;
+  /** The whole project is illustrative content. */
+  sample?: boolean;
 }
 
 export interface SkillGroup {

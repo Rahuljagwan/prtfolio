@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 // This route is separate from the home page on purpose: the chat and the 3D scene are only downloaded by people who open it,
 // so they add nothing to the home page's weight. Content edits in /admin refresh it (see publish()).
 export default async function AssistantPage() {
-  const portfolio = await getPortfolio();
+  const portfolio = await getPortfolio({ samples: false }); // the assistant only ever knows real content
 
   // One cluster per section the assistant can answer from, sized by the real amount of content behind it.
   const clusters: ClusterInfo[] = [

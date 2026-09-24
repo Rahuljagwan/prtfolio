@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { BoxGeometry, BufferAttribute, BufferGeometry, Euler, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
 import type { RigCurves } from "@/lib/world/rig-path";
+import { stationsState } from "@/lib/world/stations";
 import { ZONES } from "@/lib/world/zones";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
@@ -147,11 +148,15 @@ export function DeploymentsZone({ palette, dark, curves, shared }: { palette: Wo
     const u = shared.current.u;
     const g = root.current;
     if (!g) return;
-    g.visible = !!shared.current.warm || (u > 1.9 && u < 5.3);
+    // While the Projects flight is on, the racks are the subject: these decorative cards fade out completely and stop being drawn.
+    // (Transparent, but they write depth: even nearly invisible, one in front of a rack would hide the rack behind it.)
+    const flight = stationsState.weight;
+    g.visible = !!shared.current.warm || (u > 1.9 && u < 5.3 && flight < 0.99);
     if (!g.visible) return;
     const inn = Math.min(1, Math.max(0, (u - 2.2) / 1));
     const out = 1 - Math.min(1, Math.max(0, (u - 4.3) / 0.9));
-    const f = inn * inn * (3 - 2 * inn) * out;
+    const f = inn * inn * (3 - 2 * inn) * out * (1 - flight);
+    if (mats.current.solid) mats.current.solid.depthWrite = flight < 0.01;
     if (Math.abs(f - fade.current) > 0.002) {
       fade.current = f;
       const M = mats.current;

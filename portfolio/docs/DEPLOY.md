@@ -52,8 +52,12 @@ Your laptop / CI: prisma migrate --(DIRECT_URL, direct, TLS)--> Neon Postgres
   Prisma Migrate cannot use a pooler, so it uses the **direct** URL. That is why there are two variables
   ([Neon and Prisma guide](https://neon.com/docs/guides/prisma)).
 - Prisma reads `DATABASE_URL` for the client and `DIRECT_URL` for migrations, as set in `prisma/schema.prisma`.
-- Neon's free plan suspends an idle database and wakes it on the next request. The first request after a long idle
-  can take a second or two longer. Public pages are pre-built, so visitors are not affected.
+- Neon's free plan suspends an idle database and wakes it on the next request. The first connection after a long idle
+  can take about 5 seconds (measured), which is Prisma's default connect timeout, so it used to fail with
+  "Can't reach database server". The client now waits up to 15 seconds (`connect_timeout`, added in `src/lib/db.ts`;
+  put your own `connect_timeout` in `DATABASE_URL` to override it). Public pages are pre-built, so visitors are not affected.
+- If the database really is unreachable (for example a network that blocks port 5432), the site serves its built-in
+  content, logs one line instead of a stack trace, and skips the database for 30 seconds so pages are not slowed down.
 - Pick the Vercel function region closest to your Neon region (Project > Settings > Functions).
 
 ## 5. First deploy: verify

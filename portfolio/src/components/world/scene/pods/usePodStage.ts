@@ -48,13 +48,21 @@ export interface PodShared {
 
 const DEPLOY_U = ZONES.findIndex((z) => z.id === "deployments");
 
+/** The stage window for a project, found by its key (not by DOM order, which changes with filters and views). */
+export const findStage = (stageKey: string) =>
+  document.querySelector<HTMLElement>(`[data-pod-stage][data-stage-key="${CSS.escape(stageKey)}"]`);
+
 /**
  * Anchors a pod to its project card. The card's cover strip (data-pod-stage) is a window in the HTML; each frame we
  * read its rectangle and place the pod on the camera ray through the window's centre, sized to fill it, facing the
  * camera. Result: the pod sits inside the window whatever the scroll, tilt or camera sway, and the card body (opaque HTML
  * above the canvas) clips it naturally. Returns the group to attach the pod to, and its live control values.
+ *
+ * `minAspect`: the narrowest window (width / height) a pod's layout can spread across. In a narrower window (a featured
+ * card's tall cover) the pod is laid out at that aspect and scaled down to fit the width, so it letterboxes vertically
+ * instead of spilling past the window's sides, where nothing opaque would clip it. 0 = lay out for whatever the window is.
  */
-export function usePodStage(index: number, shared: MutableRefObject<RigShared>, pod: PodShared) {
+export function usePodStage(stageKey: string, shared: MutableRefObject<RigShared>, pod: PodShared, minAspect = 0) {
   const group = useRef<Group>(null);
   const ctl = useRef<PodCtl>({ visible: false, aspect: 2.6, intro: 0, hover: 0, dim: 1, time: 0 });
   const stage = useRef<HTMLElement | null>(null);
@@ -86,8 +94,9 @@ export function usePodStage(index: number, shared: MutableRefObject<RigShared>, 
       return;
     }
 
-    if (!stage.current || frame.current++ % 30 === 0) {
-      stage.current = document.querySelectorAll<HTMLElement>("[data-pod-stage]")[index] ?? null;
+    // Re-resolve when the window was removed (a filter or view change remounts the card) and every ~30 frames as a backstop.
+    if (!stage.current || !stage.current.isConnected || frame.current++ % 30 === 0) {
+      stage.current = findStage(stageKey);
     }
     const el = stage.current;
     if (!el) {
@@ -112,7 +121,9 @@ export function usePodStage(index: number, shared: MutableRefObject<RigShared>, 
       introStart.current = c.time;
     }
     c.intro = wasVisible.current ? easeOutCubic(clamp01((c.time - introStart.current) / 1.2)) : 0;
-    c.aspect = r.width / Math.max(1, r.height);
+    const aspect = r.width / Math.max(1, r.height);
+    c.aspect = Math.max(aspect, minAspect);
+    const fit = minAspect > 0 ? Math.min(1, aspect / minAspect) : 1;
 
     // Hover / focus: this card eases to 1, the others dim.
     const hovered = pod.hoverCard.current;
@@ -130,7 +141,7 @@ export function usePodStage(index: number, shared: MutableRefObject<RigShared>, 
     g.position.copy(p);
     g.quaternion.copy(cam.quaternion);
     const worldHeight = 2 * Math.tan((cam.fov * Math.PI) / 360) * DISTANCE;
-    g.scale.setScalar(((r.height / vh) * worldHeight * 0.5) * FIT * (1 + c.hover * 0.1));
+    g.scale.setScalar(((r.height / vh) * worldHeight * 0.5) * FIT * fit * (1 + c.hover * 0.1));
   });
 
   return { group, ctl };

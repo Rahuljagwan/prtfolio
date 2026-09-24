@@ -66,12 +66,11 @@ export function useRenderScheduler() {
       window.scrollY + window.innerHeight > document.documentElement.scrollHeight - window.innerHeight * 0.5;
 
     // Project pods are on screen when any card stage window intersects the viewport.
-    const podVisible = () => {
-      const el = document.querySelector("[data-pod-stage][data-pod]");
-      if (!el) return false;
-      const r = el.getBoundingClientRect();
-      return r.bottom > 0 && r.top < window.innerHeight;
-    };
+    const podVisible = () =>
+      Array.from(document.querySelectorAll("[data-pod-stage][data-pod]")).some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.height > 0 && r.bottom > 0 && r.top < window.innerHeight;
+      });
 
     // Two modes. Active (recent input): one draw per animation frame. Idle hero: one draw every IDLE_FRAME_MS on a timer,
     // so the page wakes about 15 times a second instead of running a 60 Hz loop that mostly does nothing.

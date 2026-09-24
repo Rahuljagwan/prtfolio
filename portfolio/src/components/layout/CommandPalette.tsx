@@ -1,39 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { useThemeTransition } from "@/hooks/useThemeTransition";
 import { ArrowRight, Search } from "lucide-react";
+import { useCommandActions } from "@/components/commands/useCommandActions";
 import { SECTIONS } from "@/content/sections";
-import { contactHref, WHATSAPP_GREETING } from "@/lib/contact";
-import { resumeHref } from "@/lib/resume";
+import { buildPaletteCommands, filterCommands } from "@/lib/commands/sources";
+import type { PaletteProject } from "@/lib/commands/types";
 import type { ContactLink, ResumeInfo } from "@/lib/types";
 
 export const OPEN_PALETTE_EVENT = "open-command-palette";
 
-interface Command {
-  id: string;
-  label: string;
-  group: "Go to" | "Actions" | "Contact" | "Resume";
-  run: () => void;
-}
-
-const CONTACT_LABELS: Record<ContactLink["type"], string> = {
-  email: "Send an email",
-  phone: "Call",
-  whatsapp: "Open WhatsApp",
-  linkedin: "Open LinkedIn",
-  github: "Open GitHub",
-};
-
-export function CommandPalette({ contacts, resume }: { contacts: ContactLink[]; resume: ResumeInfo }) {
+/**
+ * Ctrl+K. What it offers is defined in lib/commands (shared with the terminal): this component is only the window, the search
+ * box and the keyboard handling.
+ */
+export function CommandPalette({ contacts, resume, projects = [] }: { contacts: ContactLink[]; resume: ResumeInfo; projects?: PaletteProject[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
-  const { toggle: toggleTheme, resolvedTheme } = useThemeTransition();
+  const actions = useCommandActions();
 
   const close = useCallback(() => {
     setOpen(false);
@@ -41,43 +28,12 @@ export function CommandPalette({ contacts, resume }: { contacts: ContactLink[]; 
     setIndex(0);
   }, []);
 
-  const commands = useMemo<Command[]>(() => {
-    const goTo = SECTIONS.map<Command>((s) => ({
-      id: `go-${s.id}`,
-      label: s.label,
-      group: "Go to",
-      run: () => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" }),
-    }));
-    const actions: Command[] = [
-      { id: "ask", label: "Ask the assistant", group: "Actions", run: () => router.push("/assistant") },
-      {
-        id: "theme",
-        label: resolvedTheme === "dark" ? "Switch to light theme" : "Switch to dark theme",
-        group: "Actions",
-        run: () => toggleTheme(),
-      },
-    ];
-    const contact = contacts.map<Command>((c) => ({
-      id: `contact-${c.type}`,
-      label: CONTACT_LABELS[c.type],
-      group: "Contact",
-      run: () => window.open(contactHref(c, WHATSAPP_GREETING), c.type === "email" || c.type === "phone" ? "_self" : "_blank", "noopener"),
-    }));
-    const resumeCmds: Command[] = [];
-    if (resume.pdf) {
-      resumeCmds.push({ id: "resume-view", label: "View resume in browser", group: "Resume", run: () => window.open(resumeHref("pdf", resume.pdf!, "view"), "_blank", "noopener") });
-      resumeCmds.push({ id: "resume-pdf", label: "Download resume (PDF)", group: "Resume", run: () => window.location.assign(resumeHref("pdf", resume.pdf!, "download")) });
-    }
-    if (resume.docx) {
-      resumeCmds.push({ id: "resume-docx", label: "Download resume (DOCX)", group: "Resume", run: () => window.location.assign(resumeHref("docx", resume.docx!, "download")) });
-    }
-    return [...goTo, ...actions, ...resumeCmds, ...contact];
-  }, [contacts, resume, resolvedTheme, toggleTheme, router]);
+  const commands = useMemo(
+    () => buildPaletteCommands({ sections: SECTIONS.map((s) => ({ id: s.id, label: s.label })), projects, contacts, resume }, actions),
+    [projects, contacts, resume, actions],
+  );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? commands.filter((c) => c.label.toLowerCase().includes(q)) : commands;
-  }, [commands, query]);
+  const filtered = useMemo(() => filterCommands(commands, query), [commands, query]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -101,7 +57,7 @@ export function CommandPalette({ contacts, resume }: { contacts: ContactLink[]; 
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  const execute = (cmd?: Command) => {
+  const execute = (cmd?: (typeof commands)[number]) => {
     if (!cmd) return;
     close();
     // Let the panel close before scrolling so the animation is not fighting the scroll.
@@ -151,7 +107,7 @@ export function CommandPalette({ contacts, resume }: { contacts: ContactLink[]; 
                   setIndex(0);
                 }}
                 onKeyDown={onInputKey}
-                placeholder="Search sections and actions..."
+                placeholder="Search sections, projects and actions..."
                 aria-label="Search commands"
                 className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />

@@ -431,6 +431,109 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   background: hsl(var(--primary));
 }
 
+/* Layer labels beside the slabs of the Projects flight rack: a hairline to the slab, the layer name, and its technologies.
+   Only the names show on narrower screens, where the technologies would run under the site's right-hand rail. */
+.stack-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  transition: opacity 0.3s ease;
+}
+.stack-label__line {
+  position: relative;
+  width: 22px;
+  height: 1px;
+  background: hsl(var(--primary) / 0.7);
+}
+.stack-label__line::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: -1.5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+}
+.stack-label__name {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+.stack-label__items {
+  display: none;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: hsl(var(--muted-foreground));
+}
+/* The technologies fit beside the rack only on wide screens (the text panel on the left lists them in full at every width). */
+@media (min-width: 1600px) {
+  .stack-label__items {
+    display: block;
+    max-width: 11rem;
+  }
+}
+@media (min-width: 1800px) {
+  .stack-label__items {
+    max-width: 15rem;
+  }
+}
+
+/* Text tags inside the Projects flight's per-project schematics. Anchored at a point in the scene; `data-align` says which side of the
+   anchor the text sits on. A soft halo in the page colour keeps small text legible over the world behind it. */
+.ex-tag {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  white-space: nowrap;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  text-shadow: 0 0 10px hsl(var(--background) / 0.95), 0 0 3px hsl(var(--background) / 0.9);
+}
+.ex-tag[data-align="center"] {
+  align-items: center;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+.ex-tag[data-align="left"] {
+  align-items: flex-start;
+  transform: translate(0, -50%);
+}
+.ex-tag[data-align="right"] {
+  align-items: flex-end;
+  text-align: right;
+  transform: translate(-100%, -50%);
+}
+.ex-tag[style*="width"] {
+  white-space: normal;
+}
+.ex-tag__name {
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+.ex-tag__sub {
+  font-size: 11.5px;
+  color: hsl(var(--foreground) / 0.66);
+}
+
+/* The tunnel run (TunnelCamera.tsx): while the page is moving fast the edges of the world darken toward the page colour, a
+   tunnel-vision cue. --tunnel is 0 to 1, written by the camera; it costs one variable and no layout. */
+[data-world-canvas]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 40%, hsl(var(--background) / 0.85) 100%);
+  opacity: calc(var(--tunnel, 0) * 0.7);
+}
+
 .no-scrollbar {
   scrollbar-width: none;
 }

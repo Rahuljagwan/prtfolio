@@ -3,6 +3,7 @@
 // Uses the seed content, so no database is needed. Add a case here whenever the assistant gets something wrong.
 import { seed } from "../src/content/seed";
 import { answerQuestion, suggestQuestions } from "../src/lib/assistant/engine";
+import { enrichProjects } from "../src/lib/projects/enrich";
 import type { Portfolio } from "../src/lib/types";
 
 let failures = 0;
@@ -18,16 +19,20 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 // ---- topic questions
 {
   const a = ask("What projects has Rahul built?");
-  check("projects: lists all three by title", has(a.answer, "Enterprise NBFC Workflow Platform", "HR Management System", "Document Custody Platform"), a.answer);
+  check("projects: lists all eight by title", has(a.answer, "Rahul has 8 projects", "Saarthi", "InfraDesk", "Soochna", "Sakshar", "Print Tracker", "DellCube", "JMD", "CVEarity"), a.answer);
   check("projects: cites the Projects section", a.sources.some((s) => s.anchor === "projects") && a.grounded);
 }
 {
-  const a = ask("Tell me about the HR Management System");
-  check("named project: returns that project's summary and stack", has(a.answer, "employee lifecycle", "Flask", "PostgreSQL") && hasNone(a.answer, "Document Custody"), a.answer);
+  const a = ask("Tell me about InfraDesk");
+  check("named project: returns that project's summary and stack", has(a.answer, "multi-stage approval", "Flask", "Redis") && hasNone(a.answer, "Soochna"), a.answer);
 }
 {
-  const a = ask("Tell me about the HR Management System");
-  check("named project: includes its case-study challenge and outcome", has(a.answer, "Challenge:", "Outcome:", "single place"), a.answer);
+  // The enriched portfolio is what the assistant really gets (getPortfolio adds slugs and the resume's key learnings).
+  const enriched: Portfolio = { ...seed, projects: enrichProjects(seed.projects, { samples: false }) };
+  const a = ask("Tell me about InfraDesk", enriched);
+  check("named project: includes what was done and what was learned, in the resume's own words", has(a.answer, "Approach:", "Learned:", "email approval links safe"), a.answer);
+  const b = ask("Tell me about DellCube", enriched);
+  check("named project: a project with no stated learnings gets none invented", has(b.answer, "logistics platform") && hasNone(b.answer, "Learned:"), b.answer);
 }
 {
   const a = ask("Where did he study?");
@@ -76,7 +81,7 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 {
   const a = ask("Does he know Docker?");
   check("tech: Docker is found in Skills and the career path", a.grounded && has(a.answer, "Yes", "Docker", "Skills: DevOps & Cloud", "Career path"), a.answer);
-  check("tech: does NOT claim a project uses Docker (none lists it)", !/Project:/i.test(a.answer), a.answer);
+  check("tech: a project is credited with Docker only where its stack lists it", has(a.answer, "Project: Soochna", "Project: Print Tracker") && hasNone(a.answer, "Project: Admin Portal", "Project: InfraDesk", "Project: Sakshar"), a.answer);
 }
 {
   const a = ask("What is his AWS experience?");

@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { X } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, X } from "lucide-react";
 import { Chip } from "@/components/ui/Chip";
+import { SampleChip } from "@/components/ui/SampleChip";
+import { OPEN_PROJECT_EVENT, hasCaseStudy } from "@/lib/projects/utils";
 import type { Project } from "@/lib/types";
 
 // The clicked card and the expanded panel share this view-transition name, so the browser morphs one into the other.
@@ -13,8 +16,9 @@ const BACKDROP = "project-backdrop";
 const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
- * Case-study panel for project cards. The cards themselves are server-rendered (see sections/Projects.tsx); this one
- * client component listens for clicks on them (event delegation) and shows the matching project.
+ * Case-study panel for project cards. The cards are rendered by ProjectsClient (in any of its views); this one client
+ * component listens for clicks on them (event delegation) and for the open-project event (command palette), and shows the
+ * matching project. It receives the FULL project list so the case-study number matches the card's cover number. Clicks on links or on anything marked data-no-case (live demo, redacted-summary toggle) are ignored.
  *
  * Motion: with View Transitions the card morphs into the panel and back. Without support, or with reduced motion,
  * it opens instantly (a short fade where motion is allowed). Focus moves into the dialog and returns to the button.
@@ -28,9 +32,9 @@ export function CaseStudyLayer({ projects }: { projects: Project[] }) {
   const project = projects.find((p) => p.id === openId) ?? null;
   const canMorph = () => typeof document.startViewTransition === "function" && !prefersReducedMotion();
 
-  const open = useCallback((id: string, card: HTMLElement) => {
+  const open = useCallback((id: string, card: HTMLElement | null) => {
     origin.current = card;
-    if (!canMorph()) {
+    if (!card || !canMorph()) {
       setFadeIn(!prefersReducedMotion());
       setOpenId(id);
       return;
@@ -48,7 +52,7 @@ export function CaseStudyLayer({ projects }: { projects: Project[] }) {
 
   const close = useCallback(() => {
     const card = origin.current;
-    const restoreFocus = () => card?.querySelector<HTMLElement>("[data-case-open]")?.focus();
+    const restoreFocus = () => (card?.querySelector<HTMLElement>("[data-case-open]") ?? card)?.focus();
 
     if (!canMorph() || !card) {
       setOpenId(null);
@@ -68,12 +72,23 @@ export function CaseStudyLayer({ projects }: { projects: Project[] }) {
   // Open on click of a card that has a case study (or its button). Delegated, so cards need no client code.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      const card = (e.target as Element | null)?.closest?.<HTMLElement>("[data-project-card][data-has-case]");
+      const target = e.target as Element | null;
+      if (target?.closest?.("a[href], [data-no-case]")) return;
+      const card = target?.closest?.<HTMLElement>("[data-project-card][data-has-case]");
       const id = card?.dataset.projectId;
-      if (card && id && projects.some((p) => p.id === id)) open(id, card);
+      if (card && id && projects.some((p) => p.id === id && hasCaseStudy(p))) open(id, card);
+    };
+    // The command palette (and later the terminal) opens a case study by id, with no card to morph from.
+    const onOpenEvent = (e: Event) => {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id;
+      if (id && projects.some((p) => p.id === id && hasCaseStudy(p))) open(id, null);
     };
     document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    window.addEventListener(OPEN_PROJECT_EVENT, onOpenEvent);
+    return () => {
+      document.removeEventListener("click", onClick);
+      window.removeEventListener(OPEN_PROJECT_EVENT, onOpenEvent);
+    };
   }, [open, projects]);
 
   // Move focus into the dialog when it opens; handle Escape and keep Tab inside it.
@@ -143,13 +158,21 @@ export function CaseStudyLayer({ projects }: { projects: Project[] }) {
 
           <div className="space-y-8 p-6 sm:p-9">
             <header>
-              <p className="font-mono text-xs text-primary">
-                Case study · {String(index + 1).padStart(2, "0")} · {project.role}
+              <p className="flex flex-wrap items-center gap-2 font-mono text-xs text-primary">
+                <span>
+                  Case study · {String(index + 1).padStart(2, "0")} · {project.role}
+                </span>
+                {project.sample && <SampleChip />}
               </p>
               <h2 id="case-study-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
                 {project.title}
               </h2>
               <p className="mt-3 leading-relaxed text-muted-foreground">{project.summary}</p>
+              {project.slug && (
+                <Link href={`/projects/${project.slug}`} prefetch={false} className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                  Open as a shareable page <ArrowUpRight size={14} aria-hidden />
+                </Link>
+              )}
             </header>
 
             {project.challenge && (
@@ -191,6 +214,13 @@ export function CaseStudyLayer({ projects }: { projects: Project[] }) {
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {project.learnings && (
+              <section>
+                <h3 className={label}>What I learned</h3>
+                <p className="mt-2 leading-relaxed">{project.learnings}</p>
               </section>
             )}
 

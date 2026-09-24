@@ -7,10 +7,10 @@ import { ArrowUpRight } from "lucide-react";
 // was tested: it added 200+ KB to the home page's first-load JS the first time). This module has no such imports.
 import { SEND_REQUEST_EVENT, WAKE_EVENT } from "@/lib/world/events";
 
-const START = 14_203; // an illustrative starting count, not live telemetry
+const START = 14_203; // an illustrative starting count, not live telemetry (the label says "simulated traffic" for that reason)
 
 /**
- * A small ticking "requests served" counter beside the hero copy, with a button that sends a real one: it dispatches
+ * A small ticking "simulated traffic" counter beside the hero copy, with a button that sends a real one: it dispatches
  * SEND_REQUEST_EVENT, which RequestOriginZone (the 3D hero node) picks up and sends a packet travelling the whole route
  * curve. WAKE_EVENT wakes the canvas's render-on-demand loop too, in case the visitor hasn't touched the page yet and
  * it is fully idle. Both events are no-ops if the 3D world isn't running (reduced motion, mobile, ?lite, no WebGL) —
@@ -50,7 +50,7 @@ export function RequestCounter() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60 motion-reduce:animate-none" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
         </span>
-        requests served: <span className="font-semibold">{count.toLocaleString()}</span>
+        <span title="Illustrative: this number is simulated, not live traffic. The real health check is in the footer.">simulated traffic:</span> <span className="font-semibold">{count.toLocaleString()}</span>
       </p>
       {/* A segment divider, not just a gap: makes the stat and the action read as two parts of one instrument
           rather than two loose pieces of text sharing a border. */}

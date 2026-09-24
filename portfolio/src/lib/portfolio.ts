@@ -1,5 +1,9 @@
+import { cache } from "react";
 import { seed } from "@/content/seed";
+import { enrichProjects } from "./projects/enrich";
+import { SHOW_SAMPLES } from "./samples";
 import { hasDatabase, prisma } from "./db";
+import { createBreaker, describeDbError, isConnectionError } from "./db-resilience";
 import { isResumeKind } from "./resume";
 import { publicResume } from "./resume-public";
 import type { ContactLink, MilestoneStatus, Portfolio, Profile, ResumeInfo } from "./types";
@@ -11,6 +15,10 @@ const stripMeta = <T extends { order: number; updatedAt: Date }>({ order, update
   return rest;
 };
 
+// After a connection failure, skip the database for a short while so each request is served at once from the built-in
+// content instead of every one of them waiting out its own connect timeout.
+const dbBreaker = createBreaker(30_000);
+
 /**
  * Single data access point for the public site.
  * - No DATABASE_URL, or the database has not been seeded yet: serves seed.ts content.
@@ -18,7 +26,7 @@ const stripMeta = <T extends { order: number; updatedAt: Date }>({ order, update
  * A database error is logged and falls back to seed content so the public site never goes blank.
  */
 async function loadPortfolio(): Promise<Portfolio> {
-  if (!hasDatabase()) return seed;
+  if (!hasDatabase() || dbBreaker.isOpen()) return seed;
 
   try {
     const [profile, contacts, experience, projects, skillGroups, education, intro, milestones, resumeFiles] = await Promise.all([
@@ -65,16 +73,35 @@ async function loadPortfolio(): Promise<Portfolio> {
       resume,
     };
   } catch (error) {
-    console.error("getPortfolio: database read failed, serving seed content", error);
+    if (isConnectionError(error)) {
+      // Expected on a machine that cannot reach the database, or while a sleeping Neon database is still waking. One line, once.
+      if (dbBreaker.trip()) console.warn(`getPortfolio: database unavailable (${describeDbError(error)}). Serving built-in content and not retrying for 30 s.`);
+    } else {
+      console.error("getPortfolio: database read failed, serving seed content", error);
+    }
     return seed;
   }
 }
 
+async function buildPortfolio(samples: boolean): Promise<Portfolio> {
+  const [portfolio, fromPublic] = await Promise.all([loadPortfolio(), publicResume()]);
+  return {
+    ...portfolio,
+    projects: enrichProjects(portfolio.projects, { samples }),
+    resume: { ...fromPublic, ...portfolio.resume },
+  };
+}
+
+// React cache() de-duplicates within one server render (page + generateMetadata + sitemap share one read). The key is a
+// primitive on purpose: cache() compares arguments by identity, so an options object would never hit.
+const cachedPortfolio = cache(buildPortfolio);
+
 /**
  * Everything the public site renders. Resume files uploaded in /admin win; for any kind not uploaded, a file dropped in
- * public/resume/ (resume.pdf, resume.docx) is used instead.
+ * public/resume/ (resume.pdf, resume.docx) is used instead. Projects come back enriched (slug, status, ownership, ...) and
+ * with confidential ones already redacted. Pass `{ samples: false }` for anything that must not contain illustrative content
+ * (the assistant): it then gets no sample projects and no sample-flagged sections.
  */
-export async function getPortfolio(): Promise<Portfolio> {
-  const [portfolio, fromPublic] = await Promise.all([loadPortfolio(), publicResume()]);
-  return { ...portfolio, resume: { ...fromPublic, ...portfolio.resume } };
+export function getPortfolio(opts: { samples?: boolean } = {}): Promise<Portfolio> {
+  return cachedPortfolio(opts.samples ?? SHOW_SAMPLES);
 }

@@ -43,8 +43,8 @@ const mat = () => new MeshBasicMaterial({ transparent: true, depthTest: false, d
  * then returns to the lock, which swings shut. That close is the whole payoff: no burst, just secured. Same interaction
  * language as the other pods (eased motion, 1.5x on hover, pointer parallax), only basic materials.
  */
-export function VaultPod({ index, dark, shared, pod }: { index: number; dark: boolean; shared: MutableRefObject<RigShared>; pod: PodShared }) {
-  const { group, ctl } = usePodStage(index, shared, pod);
+export function VaultPod({ stageKey, dark, shared, pod }: { stageKey: string; dark: boolean; shared: MutableRefObject<RigShared>; pod: PodShared }) {
+  const { group, ctl } = usePodStage(stageKey, shared, pod);
   const inner = useRef<Group>(null);
   const slabs = useRef<(Mesh | null)[]>([]);
   const tabs = useRef<(Mesh | null)[]>([]);
@@ -74,12 +74,6 @@ export function VaultPod({ index, dark, shared, pod }: { index: number; dark: bo
     [],
   );
 
-  // Mark the card as having a pod, so CSS clears the cover and card background and the pod shows through.
-  useEffect(() => {
-    const el = document.querySelectorAll<HTMLElement>("[data-pod-stage]")[index];
-    el?.setAttribute("data-pod", "on");
-    return () => el?.removeAttribute("data-pod");
-  }, [index]);
 
   useEffect(() => {
     const C = dark ? COLORS.dark : COLORS.light;

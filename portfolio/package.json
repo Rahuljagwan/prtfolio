@@ -12,8 +12,17 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
+    "db:sync-projects": "tsx scripts/sync-projects.ts",
     "test:assistant": "tsx --conditions=react-server scripts/assistant-check.ts",
-    "test:world": "tsx scripts/world-check.ts"
+    "test:world": "tsx scripts/world-check.ts",
+    "test:projects": "tsx scripts/projects-check.ts",
+    "test:stations": "tsx scripts/stations-check.ts",
+    "test:tunnel": "tsx scripts/tunnel-check.ts",
+    "test:ops": "tsx scripts/ops-check.ts",
+    "test:engineering": "tsx scripts/engineering-check.ts",
+    "test:pipeline": "tsx scripts/pipeline-check.ts",
+    "test:commands": "tsx scripts/commands-check.ts",
+    "check:samples": "tsx scripts/samples-check.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -28,4 +28,9 @@ export function guard(req: Request): NextResponse | null {
 export const publish = () => {
   revalidatePath("/");
   revalidatePath("/assistant"); // its suggested questions are built from the content
+  revalidatePath("/projects/[slug]", "page"); // every per-project page
+  revalidatePath("/engineering/roadmap"); // shows the journey milestones
+  revalidatePath("/api/terminal-data"); // what the terminal knows about the site
+  revalidatePath("/sitemap.xml"); // lists the per-project pages
+  revalidatePath("/.well-known/security.txt"); // built from the contact email
 };

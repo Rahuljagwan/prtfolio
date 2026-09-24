@@ -31,8 +31,12 @@ export default async function Home() {
       <SpotlightController />
       <ScrollJourney />
       <JourneyRail />
-      <CaseStudyLayer projects={projects.filter(hasCaseStudy)} />
-      <CommandPalette contacts={contacts} resume={resume} />
+      <CaseStudyLayer projects={projects} />
+      <CommandPalette
+        contacts={contacts}
+        resume={resume}
+        projects={projects.map((p) => ({ id: p.id, slug: p.slug, title: p.title, hasCaseStudy: hasCaseStudy(p), sample: p.sample }))}
+      />
       <Navbar />
       <main>
         <Hero profile={profile} resume={resume} />

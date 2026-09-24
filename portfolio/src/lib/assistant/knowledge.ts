@@ -44,6 +44,7 @@ export function buildChunks(p: Portfolio): Chunk[] {
   });
 
   for (const pr of p.projects) {
+    if (pr.sample) continue; // illustrative projects are never something the assistant may state as fact
     chunks.push({
       id: `project:${pr.id}`,
       kind: "project",
@@ -57,6 +58,7 @@ export function buildChunks(p: Portfolio): Chunk[] {
         ...(pr.challenge ? [`Challenge: ${pr.challenge}`] : []),
         ...(pr.approach ?? []).map((a) => `Approach: ${a}`),
         ...(pr.outcome ? [`Outcome: ${pr.outcome}`] : []),
+        ...(pr.learnings ? [`Learned: ${pr.learnings}`] : []),
       ],
       terms: pr.stack,
     });

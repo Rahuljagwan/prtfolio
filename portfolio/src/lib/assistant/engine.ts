@@ -441,12 +441,32 @@ function rankedAnswer(index: Index, qTokens: string[]): Answer | null {
   };
 }
 
+/**
+ * The short name a visitor would actually type for a project. A title like "InfraDesk: IT Asset Request and Approval System"
+ * is called "InfraDesk"; "Admin Portal (Saarthi Platform)" is "Saarthi". Returns the token lists of the part before a colon and
+ * the part in brackets (generic words dropped), when the title has them.
+ */
+function projectAliases(title: string, stop: Set<string>): string[][] {
+  const out: string[][] = [];
+  const head = title.split(":")[0];
+  if (head !== title) out.push(tokens(head));
+  const bracket = /\(([^)]+)\)/.exec(title);
+  if (bracket) out.push(tokens(bracket[1]));
+  return out.map((a) => a.filter((t) => !stop.has(t))).filter((a) => a.length > 0);
+}
+
 function findNamedProject(index: Index, qTokens: string[]): Chunk | null {
   const q = new Set(qTokens);
   let best: { c: Chunk; ratio: number; hits: number } | null = null;
   for (const c of ofKind(index, "project")) {
     const title = tokens(c.title).filter((t) => !index.stop.has(t));
     if (title.length === 0) continue;
+    // Naming a project by its short name ("Tell me about InfraDesk") counts as naming all of it.
+    const alias = projectAliases(c.title, index.stop).find((a) => a.every((t) => q.has(t)));
+    if (alias && (!best || best.ratio < 1 || alias.length > best.hits)) {
+      best = { c, ratio: 1, hits: alias.length };
+      continue;
+    }
     const hits = title.filter((t) => q.has(t)).length;
     const ratio = hits / title.length;
     if (hits >= Math.min(2, title.length) && ratio >= 0.5 && (!best || ratio > best.ratio || (ratio === best.ratio && hits > best.hits))) best = { c, ratio, hits };

@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { Background } from "@/components/layout/Background";
+import { OverlayHost } from "@/components/terminal/OverlayHost";
+import { SITE_URL } from "@/lib/site";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -16,6 +18,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
+  // Only when NEXT_PUBLIC_SITE_URL is set (see lib/site.ts): social-image and canonical URLs need an absolute origin.
+  ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
   title: "Rahul | Full-Stack Developer",
   description: "Full-stack developer (Flask, React) building and operating production systems, moving into DevOps.",
 };
@@ -35,7 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <style>{".reveal{opacity:1!important;transform:none!important}"}</style>
         </noscript>
         <Background />
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <OverlayHost />
+        </ThemeProvider>
       </body>
     </html>
   );

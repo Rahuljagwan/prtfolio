@@ -4,11 +4,14 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Fog } from "three";
 import { makeCurves } from "@/lib/world/rig-path";
+import { WORLD_FOV, type SectionExtent } from "@/lib/world/tunnel-math";
 import type { ZoneLayout } from "@/lib/world/rig-math";
 import { ZONES } from "@/lib/world/zones";
 import { PALETTE } from "./scene/palette";
 import { RigDriver, type RigShared } from "./scene/RigDriver";
 import { ProjectPods } from "./scene/pods/ProjectPods";
+import { ProjectStations } from "./scene/ProjectStations";
+import { TunnelCamera } from "./scene/TunnelCamera";
 import { RouteDust, RouteFlow, RouteLine } from "./scene/RouteAndDust";
 import { GroundPlane } from "./scene/GroundPlane";
 import { CityZone } from "./scene/CityZone";
@@ -42,7 +45,7 @@ function useAdaptiveDpr() {
 }
 
 /** Everything inside the canvas: theme, fog, scheduler, rig, and the zone content. */
-function World({ dark, host, layouts, onReady }: Pick<WorldSceneProps, "dark" | "host" | "layouts" | "onReady">) {
+function World({ dark, host, layouts, sections, onReady }: Pick<WorldSceneProps, "dark" | "host" | "layouts" | "sections" | "onReady">) {
   const palette = dark ? PALETTE.dark : PALETTE.light;
   const scene = useThree((s) => s.scene);
   const shared = useRef<RigShared>({ u: 0, zone: 0 });
@@ -74,6 +77,12 @@ function World({ dark, host, layouts, onReady }: Pick<WorldSceneProps, "dark" | 
   return (
     <>
       <RigDriver curves={curves} layouts={layouts} host={host} shared={shared} onReady={onReady} />
+      {/* The tunnel run gives each section its own camera shot on top of the rig's pose. It must run right after the rig (which
+          re-poses the camera from scratch every frame) and before the flight, which blends over whatever this leaves. */}
+      <TunnelCamera sections={sections} shared={shared} host={host} />
+      {/* Must stay right after RigDriver and TunnelCamera and before the pods: it blends the flight camera over theirs, so it has to run
+          after they have posed the camera and before anything that reads it (the pods call cam.updateMatrixWorld). */}
+      <ProjectStations palette={palette} dark={dark} shared={shared} />
       <ambientLight intensity={dark ? 0.5 : 0.9} />
       <directionalLight position={[4, 5, 6]} intensity={dark ? 2.2 : 1.6} />
       <RouteLine curves={curves} palette={palette} shared={shared} />
@@ -95,16 +104,18 @@ export interface WorldSceneProps {
   dark: boolean;
   host: RefObject<HTMLElement | null>;
   layouts: RefObject<ZoneLayout[]>;
+  /** Where each section sits on the page, for the tunnel camera's per-section shots. */
+  sections: RefObject<SectionExtent[]>;
   onReady: () => void;
   onLost: () => void;
 }
 
-export default function WorldScene({ dark, host, layouts, onReady, onLost }: WorldSceneProps) {
+export default function WorldScene({ dark, host, layouts, sections, onReady, onLost }: WorldSceneProps) {
   return (
     <Canvas
       frameloop="demand"
       dpr={[1, 1.25]}
-      camera={{ fov: 42, near: 0.1, far: 80, position: ZONES[0].camera.position }}
+      camera={{ fov: WORLD_FOV, near: 0.1, far: 80, position: ZONES[0].camera.position }}
       // failIfMajorPerformanceCaveat: a machine with only software rendering gets no context, so it keeps the static hero.
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance", failIfMajorPerformanceCaveat: true }}
       onCreated={({ gl }) => {
@@ -114,7 +125,7 @@ export default function WorldScene({ dark, host, layouts, onReady, onLost }: Wor
         });
       }}
     >
-      <World dark={dark} host={host} layouts={layouts} onReady={onReady} />
+      <World dark={dark} host={host} layouts={layouts} sections={sections} onReady={onReady} />
     </Canvas>
   );
 }

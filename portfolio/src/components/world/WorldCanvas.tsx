@@ -35,7 +35,7 @@ export function WorldCanvas() {
   const { resolvedTheme } = useTheme();
   const host = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<WorldState>("off");
-  const layouts = useZoneLayouts(host, state !== "off");
+  const { layouts, sections } = useZoneLayouts(host, state !== "off");
 
   const setWorld = useCallback((next: WorldState) => {
     setState(next);
@@ -76,7 +76,7 @@ export function WorldCanvas() {
     >
       {state !== "off" && (
         <WorldBoundary onError={fail}>
-          <WorldScene dark={resolvedTheme === "dark"} host={host} layouts={layouts} onReady={ready} onLost={fail} />
+          <WorldScene dark={resolvedTheme === "dark"} host={host} layouts={layouts} sections={sections} onReady={ready} onLost={fail} />
         </WorldBoundary>
       )}
     </div>
