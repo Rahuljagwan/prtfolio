@@ -8,6 +8,7 @@ What was added on top of "The Living System", where it lives, and the rules it f
 |---|---|---|
 | Projects section: Flight, Grid, Timeline, Matrix views, filters, redacted-reveal card, live-demo dot | `src/components/projects/*` | SSR renders the Grid, so phones, reduced motion and no-JS get the full section. Flight is offered only while the 3D world runs. |
 | 3D project flight | `src/components/world/scene/ProjectStations.tsx`, `src/lib/world/station-math.ts`, `src/lib/world/stations.ts` | Each real project has its own 3D schematic on the right (an "exhibit", see below). A project without one gets a generic rack of slabs, one per layer of its own stack (Browser, Reverse proxy, Application, Data, Platform). An additive camera follower: it blends a pose over the rig each frame. `rig-math`, `rig-path`, `zones` and `RigDriver` are untouched. |
+| Tunnel run: a camera shot per section | `src/components/world/scene/TunnelCamera.tsx`, `src/lib/world/tunnel-math.ts` | Every section except Home and Projects has its own camera angle and a slow move that plays as it scrolls by; the shots glide into one another at the section boundaries, and the lens widens, the camera leans and the canvas edges darken with scroll speed. Additive on the rig (see below). |
 | Project pages | `src/app/projects/[slug]` | Blocks render only if the project has content for them. Samples are `noindex`. |
 | Ops proof | `next.config.mjs`, `src/app/api/{health,version}`, `StatusBadge`, `UnderTheHood` | Security headers, a real health check, the build the site is running, live web vitals. |
 | Engineering pages | `src/app/engineering/*`, `src/app/notes/*` | How this site is built, config gallery, reviews, roadmap, notes, pipeline playground. |
@@ -40,6 +41,7 @@ What was added on top of "The Living System", where it lives, and the rules it f
 ```
 npm run test:world        camera rig maths (unchanged)
 npm run test:stations     the project-flight maths and the exhibit animation helpers
+npm run test:tunnel       the per-section camera shots, the glide between them, the speed reaction, the smoothing
 npm run test:projects     enrichment, redaction, architecture classifier, the exhibit registry
 npm run test:ops          security.txt, build age, vitals ratings
 npm run test:engineering  content flags, highlighter, architecture claims against the code
@@ -80,6 +82,19 @@ On the flight, the right-hand side of each project is a small animated 3D schema
 - Each drawing is a component in `src/components/world/scene/exhibits/`, registered in that folder's `index.ts`, and built from the small kit in `kit.tsx` (`Plate`, `Bar`, `Dot`, `Wire`, `Mover`, `Flow`, `Tag`). They animate on repeating clocks (`cyc`, `win`, `ramp` in `src/lib/world/exhibit-math.ts`), are mounted only while the flight is on screen and the camera is within 1.5 stations of them (otherwise nothing of them exists in the scene).
 - To add one: write the component, add its key + caption + file to `EXHIBITS`, register it in `index.ts`, and set `exhibit` on the project. `npm run test:projects` fails if any of the three is missing or a real project has no schematic.
 - Labels are real DOM, so they stay crisp. The canvas itself is decorative: the text panel beside it carries the caption (what the schematic shows) for screen readers.
+
+## The tunnel run (a camera shot per section)
+
+The rig (`rig-math`, `RigDriver`, untouched) carries the camera along the route and holds one pose per zone, so a section used to sit in a still frame while its text scrolled. The tunnel run adds a camera **direction** on top, so travelling down the page feels like moving through a tunnel:
+
+- **A shot per section.** About, Experience, Journey, Skills, Education, Resume and Contact each have a base framing and a slow move (truck, crane, dolly, pan, tilt, roll, lens) that plays as that section scrolls past. The camera moves in its own frame, then turns back onto the point the rig was looking at, so the subject stays in view and the angle onto it changes (an arc, not a slide). The hero and Projects are left exactly alone (Projects has its own flight).
+- **Glides at the boundaries.** Between two sections the shots blend over a hop centred on the boundary (a smootherstep, so it starts and ends at rest; hops never overlap). Signs alternate from section to section, so every boundary is a change of angle.
+- **Reacts to speed.** The faster the page moves, the wider the lens (up to +6.5 degrees), the further the camera is thrown forward (or back when scrolling up) and the more it leans into the motion, and the canvas edges darken toward the page colour (`--tunnel`, CSS only). It rises quickly and lets go slowly. Clicking a far section in the nav therefore plays as a short warp.
+- **Weight.** Everything is critically damped (about 0.8 s to settle), so a jump, a reload part-way down the page or a change of layout never snaps. Nothing is drawn extra: the layer only moves the camera, and stops requesting frames once it has settled.
+
+Where things are: the shots are the `SHOTS` table in `src/lib/world/tunnel-math.ts` (degrees and world units; edit them there). The section positions come from `useZoneLayouts`, which now also reports each section's extent (hidden sections are skipped). `TunnelCamera` is mounted right after `RigDriver` and before the flight in `WorldScene`; the flight blends over whatever it leaves, and the speed reaction fades out under the flight. The maths is pure and tested (`npm run test:tunnel`: continuity, no kink in the speed, bounds, garbage and degenerate layouts, damping exactness).
+
+If a camera move ever shows something it should not (a gate or building too close to the lens), lower that section's `base`/`drift` values; `data-tunnel` on the canvas host shows the live offsets (`dx,dy,dz,yaw,pitch,roll,fov`).
 
 ## Replacing the samples
 
