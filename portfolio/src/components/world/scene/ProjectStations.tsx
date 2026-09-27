@@ -8,6 +8,7 @@ import type * as THREE from "three";
 import { RACK, activeIndex, flightWeight, focusAt, indexFromProgress, progressFromRect, rackFloorY, rackTopY, slabCount, slabWidth, slabY, stationLayout, stepEase, type Vec3 } from "@/lib/world/station-math";
 import { isExhibitKey } from "@/lib/projects/exhibits";
 import { stationsState, subscribeStations } from "@/lib/world/stations";
+import { getScrollY } from "@/lib/scroll-state";
 import { ExhibitRoot } from "./exhibits/kit";
 import { EXHIBIT_COMPONENTS } from "./exhibits";
 import type { WorldPalette } from "./palette";
@@ -83,8 +84,11 @@ function StationsCamera({ flight }: { flight: MutableRefObject<Flight> }) {
     if (track && track.isConnected && n > 0) {
       const r = track.getBoundingClientRect();
       const vh = window.innerHeight;
-      goalW = flightWeight(r.top, r.bottom, vh);
-      goalT = indexFromProgress(progressFromRect(r.top, r.height, vh), n);
+      // The rect follows the browser's whole-pixel scroll; shift it by the difference to Lenis's fractional position.
+      const shift = window.scrollY - getScrollY();
+      const top = r.top + shift;
+      goalW = flightWeight(top, r.bottom + shift, vh);
+      goalT = indexFromProgress(progressFromRect(top, r.height, vh), n);
     }
     if (f.w < 0.001 && goalW > 0) f.t = goalT; // first engagement: start where the scroll is, not from station 1
     f.t += (goalT - f.t) * (1 - Math.exp(-dt * 10));

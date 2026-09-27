@@ -12,6 +12,9 @@ export interface ZoneDef {
   camera: { position: Vec3; target: Vec3 };
 }
 
+/** Where the closing beacon sits (Signal Out). The route runs into it, and its zone frames it. */
+export const BEACON: Vec3 = [4.6, 16.2, -91];
+
 export const ZONES: ZoneDef[] = [
   {
     id: "signal",

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, type MutableRefObject, type RefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { BufferAttribute, BufferGeometry, Color, DoubleSide, Euler, type InstancedMesh, Matrix4, OctahedronGeometry, PlaneGeometry, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
 import type { RigCurves } from "@/lib/world/rig-path";
 import { INCIDENT_EVENT, INCIDENT_TIMING } from "@/lib/world/events";
+import { boundaryLocal, type SectionExtent } from "@/lib/world/tunnel-math";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
 
@@ -189,7 +190,7 @@ type Phase = "idle" | "alert" | "hold" | "reroute" | "restart" | "nominal" | "se
  * (red -> amber -> green), and a DOM log reads the sequence out loud. Triggered by INCIDENT_EVENT (a DOM button in the
  * Skills section); if the zone scrolls out of view mid-sequence it snaps straight to nominal — never a stuck red node.
  */
-export function StackZone({ palette, curves, shared }: { palette: WorldPalette; dark?: boolean; curves: RigCurves; shared: MutableRefObject<RigShared> }) {
+export function StackZone({ palette, curves, shared, sections }: { palette: WorldPalette; dark?: boolean; curves: RigCurves; shared: MutableRefObject<RigShared>; sections?: RefObject<SectionExtent[]> }) {
   const root = useRef<THREE.Group>(null);
   const vaultLayerMesh = useRef<InstancedMesh>(null);
   const towerLayerMesh = useRef<InstancedMesh>(null);
@@ -310,7 +311,10 @@ export function StackZone({ palette, curves, shared }: { palette: WorldPalette; 
     // Which half of the content is active: RigShared.local, smootherstepped over a band, not a hard switch — the
     // camera is frozen for this whole dwell, so a step change would be very visible.
     const local = shared.current.local ?? 0;
-    const towerEmph = smootherstep((local - (EMPHASIS_THRESHOLD - EMPHASIS_BAND)) / (EMPHASIS_BAND * 2));
+    // Where Skills ends and Education begins within this zone: measured from the page (the sections change height with their
+    // content), with the value measured once by hand as the fallback.
+    const threshold = boundaryLocal(sections?.current ?? [], "skills", "education") ?? EMPHASIS_THRESHOLD;
+    const towerEmph = smootherstep((local - (threshold - EMPHASIS_BAND)) / (EMPHASIS_BAND * 2));
     if (Math.abs(towerEmph - emphasis.current) > 0.002) {
       emphasis.current = towerEmph;
       const M = mats.current;

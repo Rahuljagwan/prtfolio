@@ -5,6 +5,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Fog } from "three";
 import { makeCurves } from "@/lib/world/rig-path";
 import { WORLD_FOV, type SectionExtent } from "@/lib/world/tunnel-math";
+import { makeGovernor, stepGovernor, type Governor } from "@/lib/world/quality";
+import { getScrollY } from "@/lib/scroll-state";
 import type { ZoneLayout } from "@/lib/world/rig-math";
 import { ZONES } from "@/lib/world/zones";
 import { PALETTE } from "./scene/palette";
@@ -12,6 +14,7 @@ import { RigDriver, type RigShared } from "./scene/RigDriver";
 import { ProjectPods } from "./scene/pods/ProjectPods";
 import { ProjectStations } from "./scene/ProjectStations";
 import { TunnelCamera } from "./scene/TunnelCamera";
+import { SpeedStreaks } from "./scene/SpeedStreaks";
 import { RouteDust, RouteFlow, RouteLine } from "./scene/RouteAndDust";
 import { GroundPlane } from "./scene/GroundPlane";
 import { CityZone } from "./scene/CityZone";
@@ -24,23 +27,24 @@ import { SignalOutZone } from "./scene/SignalOutZone";
 
 // Loaded lazily by WorldCanvas. Everything is procedural (no models, textures or HDRIs).
 
-/** Drops the pixel ratio once if the frame rate stays low, so weak GPUs degrade instead of stuttering. */
+/**
+ * Lets weak GPUs degrade instead of stutter: while the page is scrolling (frames are being drawn continuously) the resolution
+ * governor watches how long frames take, steps the canvas's pixel ratio down when they are slow, and gives it back after a long calm
+ * stretch (lib/world/quality.ts). Idle frames, which are rare by design, are never counted.
+ */
 function useAdaptiveDpr() {
   const setDpr = useThree((s) => s.setDpr);
-  const acc = useRef({ time: 0, frames: 0, done: false });
+  const initial = useThree((s) => s.viewport.dpr);
+  const gov = useRef<Governor | null>(null);
+  const lastY = useRef(0);
   useFrame((_, dt) => {
-    const a = acc.current;
-    if (a.done || dt > 0.1) return; // ignore the long gap after an idle period
-    a.time += dt;
-    a.frames += 1;
-    if (a.time >= 1) {
-      if (a.time / a.frames > 0.028) {
-        setDpr(1);
-        a.done = true;
-      }
-      a.time = 0;
-      a.frames = 0;
-    }
+    if (!gov.current) gov.current = makeGovernor(initial);
+    const y = getScrollY();
+    const moving = Math.abs(y - lastY.current) > 0.5;
+    lastY.current = y;
+    if (!moving || dt > 0.25) return;
+    const next = stepGovernor(gov.current, dt * 1000);
+    if (next !== undefined) setDpr(next);
   });
 }
 
@@ -88,12 +92,13 @@ function World({ dark, host, layouts, sections, onReady }: Pick<WorldSceneProps,
       <RouteLine curves={curves} palette={palette} shared={shared} />
       <RouteDust curves={curves} palette={palette} count={550} shared={shared} />
       <RouteFlow curves={curves} palette={palette} shared={shared} />
+      <SpeedStreaks curves={curves} palette={palette} shared={shared} />
       <GroundPlane palette={palette} shared={shared} />
       <RequestOriginZone palette={palette} curves={curves} shared={shared} />
       <FoundationZone palette={palette} dark={dark} curves={curves} shared={shared} />
       <CityZone palette={palette} dark={dark} curves={curves} shared={shared} />
       <DeploymentsZone palette={palette} dark={dark} curves={curves} shared={shared} />
-      <StackZone palette={palette} curves={curves} shared={shared} />
+      <StackZone palette={palette} curves={curves} shared={shared} sections={sections} />
       <ProjectPods dark={dark} shared={shared} />
       <SignalOutZone palette={palette} shared={shared} />
     </>

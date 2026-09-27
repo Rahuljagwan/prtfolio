@@ -8,6 +8,11 @@ interface RevealProps {
   delay?: number;
   y?: number;
   className?: string;
+  /**
+   * How it arrives. "up" (default) fades and lifts; "fade" only fades; "left" / "right" slide in from that side; "bare" adds
+   * no motion of its own and only toggles `.is-visible`, so children can animate themselves from it (masked headlines, hairlines).
+   */
+  variant?: "up" | "fade" | "left" | "right" | "bare";
 }
 
 // One IntersectionObserver is shared by every Reveal on the page. Each instance only adds a CSS class when it scrolls
@@ -34,7 +39,7 @@ function sharedObserver() {
 }
 
 /** Fades and lifts content in once as it enters the viewport. Reduced motion (and no-JS) shows it immediately. */
-export function Reveal({ children, delay = 0, y = 24, className }: RevealProps) {
+export function Reveal({ children, delay = 0, y = 24, className, variant = "up" }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +57,7 @@ export function Reveal({ children, delay = 0, y = 24, className }: RevealProps) 
   return (
     <div
       ref={ref}
+      data-variant={variant}
       className={cn("reveal", className)}
       style={{ "--reveal-delay": `${delay}s`, "--reveal-y": `${y}px` } as React.CSSProperties}
     >

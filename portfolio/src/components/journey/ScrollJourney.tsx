@@ -13,6 +13,7 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min);
  *
  *  - Skills:  the chips fly in from scattered positions and settle as the section scrolls into view.
  *  - Journey: each milestone card slides into place as it enters.
+ *  - Anything marked data-parallax drifts against the scroll as its section passes, for depth.
  *
  * Desktop-class devices with motion allowed only; phones, touch devices, small windows and reduced-motion users get the
  * normal static layout. Everything animates transform/opacity only. It does no work unless the page is scrolling
@@ -61,6 +62,7 @@ export function ScrollJourney() {
       }
 
       // ---- Journey: milestone cards slide into place
+      // Each stage slides in from the right as it scrolls into view (a slightly longer run for every second one).
       document.querySelectorAll<HTMLElement>("#journey [data-assemble-card]").forEach((card, i) => {
         const offset = i % 2 === 0 ? 60 : 90;
         stops.push(
@@ -69,6 +71,19 @@ export function ScrollJourney() {
           }),
         );
         cleanups.push(() => (card.style.transform = ""));
+      });
+
+      // Depth: anything marked data-parallax="0.3" drifts against the scroll as its section passes (a fraction of 240px either
+      // side of centre), so big numerals, the vault dial and the resume sheets sit at a different depth from the text.
+      document.querySelectorAll<HTMLElement>("[data-parallax]").forEach((el) => {
+        const amount = (Number(el.dataset.parallax) || 0.3) * 240;
+        const trigger = el.closest<HTMLElement>("section") ?? el;
+        stops.push(
+          scrub({ trigger, start: 1, end: 0, endEdge: "bottom" }, (p) => {
+            el.style.transform = `translate3d(0, ${((0.5 - p) * amount).toFixed(1)}px, 0)`;
+          }),
+        );
+        cleanups.push(() => (el.style.transform = ""));
       });
     };
 

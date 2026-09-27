@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { Clock, LayoutGrid, Route, Table2, X } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
+import { Chapter, Headline } from "@/components/ui/editorial";
 import { cn } from "@/lib/utils";
 import { NO_FILTERS, filterOptions, isFiltering, matchesFilters, type FilterGroup, type Filters } from "@/lib/projects/utils";
 import type { Project } from "@/lib/types";
@@ -121,11 +122,11 @@ export function ProjectsClient({ projects }: { projects: Project[] }) {
 
   return (
     <div>
-      <Reveal>
-        <div className="section-panel mb-8 !py-6 sm:!px-8">
-          <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-primary">Projects</p>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-5xl">Selected work.</h2>
+      <Reveal variant="fade">
+        <div className="veil mb-10">
+          <Chapter n="05" label="Projects" />
+          <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+            <Headline lines={["Selected work."]} className="max-w-2xl text-5xl md:text-7xl" />
             <div role="group" aria-label="Choose a view" className="inline-flex rounded-full border border-border bg-background/60 p-1">
               {(worldReady ? [FLIGHT, ...VIEWS] : VIEWS).map(({ key, label, Icon }) => (
                 <button

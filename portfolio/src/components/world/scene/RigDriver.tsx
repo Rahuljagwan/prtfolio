@@ -6,6 +6,7 @@ import { Vector3 } from "three";
 import { computeRig, projectsWeave, type ZoneLayout } from "@/lib/world/rig-math";
 import { sampleRig, type RigCurves } from "@/lib/world/rig-path";
 import { ZONES } from "@/lib/world/zones";
+import { getScrollY } from "@/lib/scroll-state";
 
 /** Shared, mutable rig state that zones read each frame (no React state, so no re-renders while scrolling). */
 export interface RigShared {
@@ -53,7 +54,7 @@ export function RigDriver({ curves, layouts, host, shared, onReady }: RigDriverP
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1);
-    const centre = window.scrollY + window.innerHeight / 2;
+    const centre = getScrollY() + window.innerHeight / 2; // fractional while Lenis is gliding, so the camera never steps a whole pixel at a time
     const { u: goal, local } = computeRig(centre, layouts.current ?? []);
 
     if (!started.current) {

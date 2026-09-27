@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { scrub } from "@/lib/scroll-scrub";
+import { cn } from "@/lib/utils";
 
 /**
  * Scroll-driven timeline line. Render it inside a `relative` wrapper that also contains the timeline items;
@@ -11,7 +12,8 @@ import { scrub } from "@/lib/scroll-scrub";
  * Reduced motion shows the completed line and lit dots with no animation. Without JavaScript the line is shown complete
  * (see the noscript style below). It uses lib/scroll-scrub.ts, so it does no work unless the page is scrolling.
  */
-export function TimelineProgress() {
+/** `className` repositions the rail (for example `left-1/2` to run it down the middle of a two-sided layout). */
+export function TimelineProgress({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,11 +42,11 @@ export function TimelineProgress() {
   }, []);
 
   return (
-    <div ref={ref} aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border">
+    <div ref={ref} aria-hidden className={cn("pointer-events-none absolute inset-y-0 left-0 w-px bg-border", className)}>
       <div data-progress className="timeline-progress absolute inset-y-0 -left-px w-[3px] origin-top rounded-full bg-primary" />
       {/* Without JavaScript nothing can draw the line, so show it complete. */}
       <noscript>
-        <style>{`.timeline-progress{transform:scaleY(1)!important}[data-timeline-dot]{background:hsl(var(--primary))!important}`}</style>
+        <style>{`.timeline-progress{transform:scaleY(1)!important}[data-timeline-dot]:not(.stage-node){background:hsl(var(--primary))!important}.stage-node{background:hsl(var(--primary))!important;color:hsl(var(--primary-foreground))!important}`}</style>
       </noscript>
     </div>
   );

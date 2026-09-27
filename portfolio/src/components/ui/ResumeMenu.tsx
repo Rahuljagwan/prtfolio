@@ -24,7 +24,12 @@ interface Option {
  */
 export function ResumeMenu({ resume }: { resume: ResumeInfo }) {
   const [open, setOpen] = useState(false);
+  // Which way the menu opens. In the hero the button sits close to the bottom of the screen (and of a section that clips what
+  // overflows it), so a menu that always opened downward was cut off. It opens upward when there is not room below.
+  const [up, setUp] = useState(false);
+  const [alignRight, setAlignRight] = useState(false); // opens toward the left instead when that is where the room is (or the strip beside it is)
   const root = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -48,11 +53,27 @@ export function ResumeMenu({ resume }: { resume: ResumeInfo }) {
   }
   if (options.length === 0) return null;
 
+  const toggle = () => {
+    if (!open && button.current) {
+      const r = button.current.getBoundingClientRect();
+      const section = button.current.closest("section")?.getBoundingClientRect();
+      const room = Math.min(window.innerHeight, section ? section.bottom : window.innerHeight) - r.bottom;
+      const openUp = room < options.length * 46 + 36;
+      const width = 240; // the menu is 15rem wide
+      const fitsLeftAligned = r.left + width <= window.innerWidth - 8;
+      const fitsRightAligned = r.right - width >= 8;
+      setUp(openUp);
+      setAlignRight(openUp ? fitsRightAligned : !fitsLeftAligned && fitsRightAligned);
+    }
+    setOpen((v) => !v);
+  };
+
   return (
     <div ref={root} className="relative">
       <button
+        ref={button}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         aria-expanded={open}
         aria-haspopup="menu"
         className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-background/60 px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -66,11 +87,15 @@ export function ResumeMenu({ resume }: { resume: ResumeInfo }) {
         {open && (
           <motion.ul
             role="menu"
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            initial={{ opacity: 0, y: up ? 6 : -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            exit={{ opacity: 0, y: up ? 6 : -6, scale: 0.98 }}
             transition={{ duration: 0.16 }}
-            className="absolute left-0 top-full z-20 mt-2 min-w-[15rem] overflow-hidden rounded-2xl border border-border bg-card/95 p-1.5 shadow-xl backdrop-blur-xl"
+            className={cn(
+              "absolute z-20 min-w-[15rem] overflow-hidden rounded-2xl border border-border bg-card/95 p-1.5 shadow-xl backdrop-blur-xl",
+              up ? "bottom-full mb-2" : "top-full mt-2",
+              alignRight ? "right-0" : "left-0",
+            )}
           >
             {options.map((o) => (
               <li key={o.label} role="none">

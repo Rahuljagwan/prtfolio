@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BufferAttribute, BufferGeometry, Matrix4, MeshBasicMaterial, Quaternion, TubeGeometry, Vector3 } from "three";
+import { BufferAttribute, BufferGeometry, CurvePath, LineCurve3, Matrix4, MeshBasicMaterial, Quaternion, TubeGeometry, Vector3 } from "three";
 import type * as THREE from "three";
 import type { RigCurves } from "@/lib/world/rig-path";
-import { ZONES } from "@/lib/world/zones";
+import { BEACON, ZONES } from "@/lib/world/zones";
+import { ambientInvalidate } from "./ambient";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
 
@@ -18,6 +19,45 @@ function routeStrength(u: number) {
   return ROUTE_HERO_STRENGTH + (1 - ROUTE_HERO_STRENGTH) * s * s * (3 - 2 * s);
 }
 
+const ROUTE_RADIAL = 6; // sides of the tube
+const ROUTE_TAPER = 0.1; // how thin the tube gets where it reaches the beacon (a fraction of its radius)
+
+/**
+ * The route as a tube. It follows the camera path, then does not stop where the camera's last pose is: it carries on into the
+ * closing beacon and narrows to a point there. A tube that ended at the camera's last pose showed a blunt, flat cut in mid-air as
+ * soon as the camera moved a little past it (the Resume and Contact shots do), and the route is meant to lead into the beacon anyway:
+ * "the signal you started with, now sent out". Built in the route group's own space (which sits ROUTE_DROP below the world).
+ */
+function routeTube(curves: RigCurves, radius: number, segments: number) {
+  const start = curves.position.getPoint(1);
+  const end = new Vector3(BEACON[0], BEACON[1] + ROUTE_DROP, BEACON[2]);
+  const path = new CurvePath<Vector3>();
+  path.add(curves.position);
+  path.add(new LineCurve3(start, end));
+  const geo = new TubeGeometry(path, segments, radius, ROUTE_RADIAL, false);
+
+  // The extension is the last part of the path by length: from there on, pull each ring in toward its centre line.
+  const lengths = path.getCurveLengths();
+  const from = lengths[0] / lengths[1];
+  const pos = geo.getAttribute("position") as BufferAttribute;
+  const ring = ROUTE_RADIAL + 1;
+  const c = new Vector3();
+  const v = new Vector3();
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    if (t <= from) continue;
+    const e = Math.min(1, (t - from) / (1 - from));
+    const k = 1 - (1 - ROUTE_TAPER) * (e * e * (3 - 2 * e));
+    path.getPointAt(t, c);
+    for (let j = 0; j < ring; j++) {
+      v.fromBufferAttribute(pos, i * ring + j).sub(c).multiplyScalar(k).add(c);
+      pos.setXYZ(i * ring + j, v.x, v.y, v.z);
+    }
+  }
+  pos.needsUpdate = true;
+  return geo;
+}
+
 /**
  * The pipeline itself: a glowing tube following the camera path, slightly below it, so you can see the route ahead
  * through every zone -- the thread that ties the whole journey together. "Glowing" without any post-processing: a
@@ -25,8 +65,8 @@ function routeStrength(u: number) {
  * world uses (a small opaque mesh plus a bigger transparent one), just swept along a curve instead of held at a point.
  */
 export function RouteLine({ curves, palette, shared }: { curves: RigCurves; palette: WorldPalette; shared: MutableRefObject<RigShared> }) {
-  const core = useMemo(() => new TubeGeometry(curves.position, 400, 0.032, 6, false), [curves]);
-  const halo = useMemo(() => new TubeGeometry(curves.position, 400, 0.11, 6, false), [curves]);
+  const core = useMemo(() => routeTube(curves, 0.032, 460), [curves]);
+  const halo = useMemo(() => routeTube(curves, 0.11, 460), [curves]);
   const coreMat = useMemo(() => new MeshBasicMaterial({ transparent: true, opacity: 0.95, depthWrite: false }), []);
   const haloMat = useMemo(() => new MeshBasicMaterial({ transparent: true, opacity: 0.22, depthWrite: false }), []);
   const lastK = useRef(-1);
@@ -111,7 +151,7 @@ export function RouteFlow({ curves, palette, shared }: { curves: RigCurves; pale
     }
     g.instanceMatrix.needsUpdate = true;
     if (mat.current) mat.current.opacity = 0.85 * routeStrength(u); // same hero-quiet ramp as the tube itself
-    state.invalidate();
+    ambientInvalidate(state.invalidate);
   });
 
   return (

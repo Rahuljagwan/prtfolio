@@ -14,6 +14,9 @@ export const WAKE_EVENT = "world:wake";
 /** Dispatch to send one request packet travelling the whole route curve, from RequestOriginZone's origin node. */
 export const SEND_REQUEST_EVENT = "world:send-request";
 
+/** How long a sent request takes to cross the whole route (seconds): the 3D packet, the hero guide's stage highlighting and the contact terminal's "200 OK" all use it. */
+export const REQUEST_TRAVEL_SECONDS = 4.6;
+
 /** Dispatch to start the Stack zone's incident sequence (a node fails, reroutes, restarts). No-op if one is already running. */
 export const INCIDENT_EVENT = "world:trigger-incident";
 

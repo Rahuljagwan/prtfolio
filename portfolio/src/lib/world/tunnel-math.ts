@@ -180,6 +180,23 @@ export function poseAt(center: number, sections: readonly SectionExtent[]): Pose
   return result;
 }
 
+/**
+ * Where the boundary between two neighbouring sections sits within the zone they share, in the rig's `local` units (-0.5 at the
+ * top of the zone, +0.5 at the bottom), or undefined when either is not on the page. Zones that show something different for each
+ * of their sections (the Stack: Skills, then Education) use it to know which section is on screen while the camera is held still.
+ */
+export function boundaryLocal(sections: readonly SectionExtent[], first: string, second: string): number | undefined {
+  const a = sections.find((s) => s.id === first);
+  const b = sections.find((s) => s.id === second);
+  if (!a || !b) return undefined;
+  const top = Math.min(finite(a.top), finite(b.top));
+  const bottom = Math.max(finite(a.bottom), finite(b.bottom));
+  const h = bottom - top;
+  if (!(h > 0)) return undefined;
+  const boundary = (Math.max(finite(a.top), finite(a.bottom)) + Math.min(finite(b.top), finite(b.bottom))) / 2;
+  return clamp((boundary - top) / h - 0.5, -0.5, 0.5);
+}
+
 // ---- reacting to speed
 
 export const FX = {
@@ -208,6 +225,27 @@ export function leanFor(speed: number): { dz: number; roll: number } {
 
 /** How much of the speed reaction applies at path position u: none over the hero, full once the visitor has left it. */
 export const fxWeight = (u: number) => smootherstep((finite(u) - 0.3) / 0.6);
+
+/** How far the camera sways at full speed: the small, slow, never-repeating-looking movement of something travelling, not standing. */
+export const SWAY = { dx: 0.1, dy: 0.07, yaw: 0.5, pitch: 0.3, roll: 0.35 } as const;
+
+/**
+ * The sway at `time` seconds for an `amount` of 0 to 1 (the speed): a few sine waves with unrelated periods, so it never
+ * settles into a visible loop. Exactly zero at rest, bounded by SWAY for any time.
+ */
+export function swayAt(time: number, amount: number): Pose {
+  const a = clamp01(amount);
+  const t = finite(time);
+  return {
+    dx: SWAY.dx * a * Math.sin(t * 0.83 + 0.4),
+    dy: SWAY.dy * a * Math.sin(t * 1.17 + 2.0),
+    dz: 0,
+    yaw: SWAY.yaw * a * Math.sin(t * 0.73 + 3.2),
+    pitch: SWAY.pitch * a * Math.sin(t * 0.97 + 1.3),
+    roll: SWAY.roll * a * Math.sin(t * 0.61 + 1.1),
+    fov: 0,
+  };
+}
 
 // ---- the pivot the camera keeps its subject on
 

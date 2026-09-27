@@ -8,6 +8,7 @@ import type { RigCurves } from "@/lib/world/rig-path";
 import { ZONES } from "@/lib/world/zones";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
+import { ambientInvalidate } from "./ambient";
 
 const GROUND_Y = -2.7;
 const BUILDINGS = 120;
@@ -331,7 +332,7 @@ export function CityZone({ palette, dark, curves, shared }: { palette: WorldPale
       const pulse = 0.5 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() * 0.0016));
       if (M.ciLight) M.ciLight.opacity = 0.95 * f * pulse; // brighter peak: amber needs more presence against this green-heavy backdrop
       if (M.cdLight) M.cdLight.opacity = 0.6 * f * pulse;
-      invalidate();
+      ambientInvalidate(invalidate);
     }
   });
 

@@ -7,7 +7,9 @@ import {
   POSE_KEYS,
   SHOTS,
   SHOT_ORDER,
+  SWAY,
   ZERO_POSE,
+  boundaryLocal,
   damp,
   dampPose,
   focalDistance,
@@ -20,10 +22,13 @@ import {
   settled,
   shotPose,
   speedNorm,
+  swayAt,
   type Pose,
   type SectionExtent,
 } from "../src/lib/world/tunnel-math";
 import { ZONES } from "../src/lib/world/zones";
+import { scrollDuration } from "../src/lib/scroll-state";
+import { QUALITY, makeGovernor, stepGovernor } from "../src/lib/world/quality";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -230,6 +235,93 @@ check("speed: signed, clamped to -1..1, zero at rest", speedNorm(0) === 0 && spe
   const target = poseAt(mid("journey"), PAGE);
   check("pose state: not settled while it has somewhere to go, settled once it arrives", !settled(state, target) && (() => { for (let i = 0; i < 600; i++) dampPose(state, target, 1 / 60, 5.2); return settled(state, target); })());
   check("pose state: starting on a shot starts at rest on it", settled(makePoseState(target), target) && settled(makePoseState(), ZERO_POSE));
+}
+
+// ---- sway: the small movement of something travelling
+{
+  check("sway: exactly nothing at rest, whatever the time", [0, 1.7, 99, 1e6].every((t) => mag(swayAt(t, 0)) === 0));
+  let inRange = true;
+  for (let i = 0; i < 4000; i++) {
+    const q = swayAt(i * 0.37, 1);
+    inRange = inRange && Math.abs(q.dx) <= SWAY.dx + 1e-12 && Math.abs(q.dy) <= SWAY.dy + 1e-12 && Math.abs(q.yaw) <= SWAY.yaw + 1e-12 && Math.abs(q.pitch) <= SWAY.pitch + 1e-12 && Math.abs(q.roll) <= SWAY.roll + 1e-12 && q.dz === 0 && q.fov === 0;
+  }
+  check("sway: bounded by SWAY at full speed and never touches the dolly or the lens", inRange);
+  check("sway: scales with speed, and garbage input stays finite", Math.abs(swayAt(3, 0.5).roll) <= Math.abs(swayAt(3, 1).roll) + 1e-12 && [NaN, Infinity, -5, 9].every((a) => finitePose(swayAt(NaN, a)) && finitePose(swayAt(2, a))));
+  let smooth = true;
+  let prev = swayAt(0, 1);
+  for (let i = 1; i < 2000; i++) {
+    const q = swayAt(i / 60, 1);
+    smooth = smooth && diff(q, prev) < 0.02;
+    prev = q;
+  }
+  check("sway: moves smoothly frame to frame (no jitter) and does not repeat on a short loop", smooth && diff(swayAt(0, 1), swayAt(10, 1)) > 1e-3 && diff(swayAt(0, 1), swayAt(60, 1)) > 1e-3);
+}
+
+// ---- where Skills ends and Education begins inside their shared zone
+{
+  const sk = { id: "skills", top: 1000, bottom: 1800 };
+  const ed = { id: "education", top: 1800, bottom: 2400 };
+  check("boundary: in rig units, from the real section positions", near(boundaryLocal([sk, ed], "skills", "education")!, (1800 - 1000) / (2400 - 1000) - 0.5, 1e-12));
+  check("boundary: equal sections meet at the centre, a taller first section pushes it toward the bottom", near(boundaryLocal([{ id: "skills", top: 0, bottom: 500 }, { id: "education", top: 500, bottom: 1000 }], "skills", "education")!, 0, 1e-12) && boundaryLocal([sk, ed], "skills", "education")! > 0);
+  check("boundary: a gap between the sections puts it in the middle of the gap", near(boundaryLocal([{ id: "skills", top: 0, bottom: 400 }, { id: "education", top: 600, bottom: 1000 }], "skills", "education")!, 0, 1e-12));
+  check("boundary: undefined when either section is missing or the zone has no height", boundaryLocal([sk], "skills", "education") === undefined && boundaryLocal([ed], "skills", "education") === undefined && boundaryLocal([], "skills", "education") === undefined && boundaryLocal([{ id: "skills", top: 5, bottom: 5 }, { id: "education", top: 5, bottom: 5 }], "skills", "education") === undefined);
+  check("boundary: always within -0.5..0.5, even for garbage", [NaN, Infinity].every((v) => { const r = boundaryLocal([{ id: "skills", top: 0, bottom: v }, { id: "education", top: v, bottom: 100 }], "skills", "education"); return r === undefined || (r >= -0.5 && r <= 0.5); }));
+}
+
+// ---- how long a programmatic scroll takes
+{
+  let mono = true;
+  let prev = 0;
+  for (let n = 0; n <= 60; n += 0.5) {
+    const d = scrollDuration(n);
+    mono = mono && d >= prev - 1e-12;
+    prev = d;
+  }
+  check("scroll: a hop is quick, a far jump a proper journey, never a wait (0.9 s to 3.2 s), growing with distance", mono && scrollDuration(0) === 0.9 && scrollDuration(1) > 1.3 && scrollDuration(13) < 3.2 && scrollDuration(1e6) === 3.2);
+  check("scroll: the same either way and never NaN", scrollDuration(-7) === scrollDuration(7) && [NaN, Infinity, -Infinity].every((v) => Number.isFinite(scrollDuration(v))));
+}
+
+// ---- the resolution governor
+{
+  const run = (ceiling: number, frames: number[]) => {
+    const g = makeGovernor(ceiling);
+    const changes: number[] = [];
+    for (const f of frames) {
+      const r = stepGovernor(g, f);
+      if (r !== undefined) changes.push(r);
+    }
+    return { g, changes };
+  };
+  const rep = (ms: number, seconds: number) => Array.from({ length: Math.round((seconds * 1000) / ms) }, () => ms);
+  check("governor: a steady 60 fps never changes anything", run(1.25, rep(16.7, 120)).changes.length === 0);
+  check("governor: a display locked at 30 fps (33 ms frames) is left alone, that is the screen and not the GPU", run(1.25, rep(33.3, 120)).changes.length === 0);
+  const slow = run(1.25, rep(50, 30));
+  check("governor: genuinely slow frames step the ratio down, one notch at a time", slow.changes.length >= 2 && slow.changes[0] < 1.25 && near(slow.changes[0], 1.25 * QUALITY.step, 1e-9) && slow.changes.every((v, i) => i === 0 || near(v, Math.max(QUALITY.min, slow.changes[i - 1] * QUALITY.step), 1e-9)));
+  check("governor: it never goes below the floor, and never changes twice within the settling time", slow.g.dpr >= QUALITY.min - 1e-12 && run(1.25, rep(120, 300)).g.dpr >= QUALITY.min - 1e-12);
+  {
+    const g = makeGovernor(1.25);
+    let t = 0;
+    let lastChange = -1;
+    let tooSoon = false;
+    for (let i = 0; i < 2000; i++) {
+      t += 0.05;
+      if (stepGovernor(g, 50) !== undefined) {
+        if (lastChange >= 0 && t - lastChange < QUALITY.settle - 1e-9) tooSoon = true;
+        lastChange = t;
+      }
+    }
+    check("governor: changes are always at least the settling time apart (no flicker)", !tooSoon);
+  }
+  {
+    const g = makeGovernor(1.25);
+    for (const f of rep(50, 12)) stepGovernor(g, f); // drops
+    const dropped = g.dpr;
+    const calmShort = rep(16.7, 20).map((f) => stepGovernor(g, f)).filter((v) => v !== undefined);
+    check("governor: after a drop it does not give the resolution back for a long while", dropped < 1.25 && calmShort.length === 0 && g.dpr === dropped);
+    const later = rep(16.7, 60).map((f) => stepGovernor(g, f)).filter((v): v is number => v !== undefined);
+    check("governor: after a long calm it gives it back, one notch at a time, never above the ceiling", later.length >= 1 && later[0] > dropped && g.dpr <= 1.25 + 1e-12);
+  }
+  check("governor: garbage frame times are ignored, a bad ceiling still gives a usable ratio", (() => { const g = makeGovernor(1); return [NaN, -5, 0, Infinity].every((v) => { const r = stepGovernor(g, v); return r === undefined || Number.isFinite(r); }) && makeGovernor(NaN).dpr === 1 && makeGovernor(0).dpr === QUALITY.min; })());
 }
 
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);

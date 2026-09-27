@@ -4,6 +4,8 @@ import { useMemo, useRef, type MutableRefObject, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Euler, Quaternion, Vector3, type PerspectiveCamera } from "three";
 import { stationsState } from "@/lib/world/stations";
+import { motionState } from "@/lib/world/motion";
+import { getScrollY } from "@/lib/scroll-state";
 import {
   WORLD_FOV,
   damp,
@@ -16,6 +18,8 @@ import {
   poseAt,
   settled,
   speedNorm,
+  smootherstep,
+  swayAt,
   type Damped,
   type SectionExtent,
 } from "@/lib/world/tunnel-math";
@@ -66,7 +70,7 @@ export function TunnelCamera({ sections, shared, host }: { sections: RefObject<S
     const s = st.current;
     const cam = state.camera as PerspectiveCamera;
     const dt = Math.min(delta, 0.1);
-    const y = window.scrollY;
+    const y = getScrollY(); // fractional while Lenis glides: no whole-pixel stepping while the page decelerates
     const vh = Math.max(1, window.innerHeight);
     const u = shared.current.u;
 
@@ -89,13 +93,19 @@ export function TunnelCamera({ sections, shared, host }: { sections: RefObject<S
     const lean = leanFor(s.speed.x * fx);
     const kick = fovKick(s.speed.x) * fx;
 
+    // Something moving sways a little; something standing still does not. Proportional to speed, so it costs no idle frames and
+    // is exactly zero when the page is at rest.
+    const sway = swayAt(state.clock.elapsedTime, smootherstep(Math.abs(s.speed.x)) * fx);
+    motionState.speed = s.speed.x;
+    motionState.fx = fx;
+
     const p = s.pose;
-    const dx = p.dx.x;
-    const dy = p.dy.x;
+    const dx = p.dx.x + sway.dx;
+    const dy = p.dy.x + sway.dy;
     const dz = p.dz.x + lean.dz;
-    const yaw = p.yaw.x;
-    const pitch = p.pitch.x;
-    const roll = p.roll.x + lean.roll;
+    const yaw = p.yaw.x + sway.yaw;
+    const pitch = p.pitch.x + sway.pitch;
+    const roll = p.roll.x + lean.roll + sway.roll;
     const fov = p.fov.x * (1 - Math.min(1, stationsState.weight)) + kick;
 
     const still = Math.abs(dx) + Math.abs(dy) + Math.abs(dz) + Math.abs(yaw) + Math.abs(pitch) + Math.abs(roll) < 1e-4;

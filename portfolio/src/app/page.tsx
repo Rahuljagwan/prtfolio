@@ -38,7 +38,8 @@ export default async function Home() {
         projects={projects.map((p) => ({ id: p.id, slug: p.slug, title: p.title, hasCaseStudy: hasCaseStudy(p), sample: p.sample }))}
       />
       <Navbar />
-      <main>
+      {/* overflow-x: clip (not hidden, so sticky columns still work): the soft backdrops behind text reach past the screen edge on purpose. */}
+      <main className="overflow-x-clip">
         <Hero profile={profile} resume={resume} />
         <About profile={profile} />
         <Experience items={experience} />

@@ -48,17 +48,20 @@ export function IncidentPanel() {
   };
 
   return (
-    <div className="mt-6 flex flex-wrap items-start gap-3">
+    <div className="mt-10">
       <button
         type="button"
         onClick={trigger}
         disabled={active}
-        className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
+        className="group inline-flex items-center gap-3 rounded-full border border-border bg-background/60 py-2 pl-4 pr-5 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60"
       >
+        <span aria-hidden className="text-primary transition-transform group-hover:translate-x-0.5">
+          $
+        </span>
         {active ? "incident in progress..." : "simulate an incident"}
       </button>
       {log.length > 0 && (
-        <div aria-live="polite" className="rounded-lg border border-border bg-background/85 px-3 py-2 font-mono text-xs leading-relaxed text-muted-foreground backdrop-blur">
+        <div aria-live="polite" className="mt-4 border-l border-primary/50 pl-4 font-mono text-xs leading-relaxed text-muted-foreground">
           {log.map((line, i) => (
             <p key={i} className={line.startsWith("This is") ? "mt-1 text-foreground" : undefined}>
               {line}

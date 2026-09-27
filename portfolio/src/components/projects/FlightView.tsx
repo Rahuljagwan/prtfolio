@@ -12,6 +12,7 @@ import { architectureFor, rackLayers } from "@/lib/projects/architecture";
 import { captionFor } from "@/lib/projects/exhibits";
 import { activeIndex, indexFromProgress, progressForIndex, progressFromRect, trackHeightVh } from "@/lib/world/station-math";
 import { registerFlight, unregisterFlight } from "@/lib/world/stations";
+import { smoothScrollTo } from "@/lib/scroll-state";
 import type { Project } from "@/lib/types";
 import { LiveDot, MetricsStrip, OwnershipBar, RedactedSummary, StatusChip } from "./parts";
 
@@ -76,7 +77,7 @@ export function FlightView({ projects }: { projects: Project[] }) {
       const vh = window.innerHeight;
       const top = el.getBoundingClientRect().top + window.scrollY;
       const range = Math.max(1, el.offsetHeight - vh);
-      window.scrollTo({ top: top + progressForIndex(i, n) * range, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      smoothScrollTo(top + progressForIndex(i, n) * range, { offset: 0 });
     },
     [n],
   );

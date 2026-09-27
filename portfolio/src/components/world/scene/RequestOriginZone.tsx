@@ -5,7 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { BoxGeometry, Color, type InstancedMesh, Matrix4, MeshBasicMaterial, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
-import { SEND_REQUEST_EVENT } from "@/lib/world/events";
+import { REQUEST_TRAVEL_SECONDS, SEND_REQUEST_EVENT } from "@/lib/world/events";
 import type { RigCurves } from "@/lib/world/rig-path";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
@@ -19,7 +19,7 @@ import type { RigShared } from "./RigDriver";
 export { SEND_REQUEST_EVENT };
 
 const TRAIL = 10;
-const TRAVEL_SECONDS = 4.6; // how long a sent request takes to cross the whole route
+const TRAVEL_SECONDS = REQUEST_TRAVEL_SECONDS; // how long a sent request takes to cross the whole route
 const LAUNCH = 0.05; // fraction of the trip spent leaving the node itself before joining the route curve
 const RING_TICKS = 36;
 const RING_RADIUS = 1.62; // just outside the wireframe shell (1.15 * 1.32 ≈ 1.52), so it reads as its own ring, not clipping into it
@@ -300,7 +300,7 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
         <Html position={[0, 1.7, 0]} center wrapperClass="pointer-events-none" zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
           <div ref={originLabelRef} className="hud-label" style={{ opacity: 0 }}>
             <span className="hud-label__line" aria-hidden />
-            origin node
+            you &middot; the request starts here
           </div>
         </Html>
       </group>
@@ -310,7 +310,7 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
       <Html position={pathAnchor} center wrapperClass="pointer-events-none" zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
         <div ref={pathLabelRef} className="hud-label" style={{ opacity: 0 }}>
           <span className="hud-label__line" aria-hidden />
-          request path &#8595;
+          the route &middot; scroll to follow it &#8595;
         </div>
       </Html>
 

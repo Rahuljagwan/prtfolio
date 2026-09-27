@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import { WAKE_EVENT } from "@/lib/world/events";
+import { activity } from "@/lib/world/activity";
 
 // Re-exported so existing imports of WAKE_EVENT from this file keep working; the name is defined in lib/world/events.ts
 // (which has no three.js/R3F imports) so eagerly-loaded DOM code can reference it without pulling the 3D stack in too.
@@ -94,6 +95,7 @@ export function useRenderScheduler() {
 
     const wake = () => {
       lastActivity = performance.now();
+      activity.last = lastActivity;
       if (!running) {
         running = true;
         raf = requestAnimationFrame(tick);

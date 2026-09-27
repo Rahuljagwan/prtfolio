@@ -4,15 +4,14 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BufferAttribute, BufferGeometry, MeshBasicMaterial } from "three";
 import type * as THREE from "three";
-import { ZONES } from "@/lib/world/zones";
+import { BEACON, ZONES } from "@/lib/world/zones";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
 
 const PULSES = 4;
 const PULSE_PERIOD = 6; // seconds for one ring to travel out and fade
-const BEACON_X = 4.6; // right of centre, like the hero core, so the contact text keeps the middle
-const BEACON_Y = 16.2;
-const BEACON_Z = -91;
+// Right of centre, like the hero core, so the contact text keeps the middle (the position lives in zones.ts: the route runs into it too).
+const [BEACON_X, BEACON_Y, BEACON_Z] = BEACON;
 
 function rng(seed: number) {
   let s = seed;

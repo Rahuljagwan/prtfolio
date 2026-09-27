@@ -3,15 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 // Deliberately from lib/world/events and lib/contact, not from any zone file that imports three.js — Contact ships in
 // the ordinary page bundle, so it must stay three.js-free (see RequestCounter.tsx for the reasoning).
-import { SEND_REQUEST_EVENT, WAKE_EVENT } from "@/lib/world/events";
+import { REQUEST_TRAVEL_SECONDS, SEND_REQUEST_EVENT, WAKE_EVENT } from "@/lib/world/events";
 import { contactHref, findContact } from "@/lib/contact";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import type { ContactLink } from "@/lib/types";
 
 // Matches RequestOriginZone's TRAVEL_SECONDS exactly: the terminal's "200 OK" lands the instant the packet this
 // button sends actually completes its trip across the whole site and arrives back here — the visitor's own message
 // is the last request served, closing the loop the hero's "send a request" button opened.
-const TRAVEL_SECONDS = 4.6;
+const TRAVEL_SECONDS = REQUEST_TRAVEL_SECONDS;
 
 type Stage = "idle" | "compose" | "sending" | "done";
 
@@ -54,7 +53,7 @@ export function ContactTerminal({ contacts }: { contacts: ContactLink[] }) {
   if (!email) return null;
 
   return (
-    <SpotlightCard className="p-5 font-mono text-sm">
+    <div className="veil veil-soft font-mono text-sm">
       <div className="flex items-center gap-1.5 border-b border-border pb-3">
         <span className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/70" />
@@ -115,6 +114,6 @@ export function ContactTerminal({ contacts }: { contacts: ContactLink[] }) {
           </div>
         )}
       </div>
-    </SpotlightCard>
+    </div>
   );
 }

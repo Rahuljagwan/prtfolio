@@ -4,6 +4,7 @@ import { ButtonLink, buttonStyles } from "@/components/ui/Button";
 import { Magnetic } from "@/components/ui/Magnetic";
 import { HeroFallback } from "@/components/hero/HeroFallback";
 import { RequestCounter } from "@/components/hero/RequestCounter";
+import { HeroGuide } from "@/components/hero/HeroGuide";
 import { FallbackNote } from "@/components/hero/FallbackNote";
 import { ResumeMenu } from "@/components/ui/ResumeMenu";
 import { cn } from "@/lib/utils";
@@ -42,13 +43,16 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
           {/* The thesis: converts the 3D world from decoration to demonstration in one line. Tightly coupled to the
               subtitle above it (small gap) since the two read as one continuous introduction, not two separate ideas. */}
           <p style={delay(0.19)} className="mt-2 max-w-lg animate-fade-up text-sm text-muted-foreground/80 motion-reduce:animate-none">
-            This site runs like one of my systems — scroll to follow a request from browser to server&nbsp;to&nbsp;database.
+            This site is built like one of my systems: every section is a stage a request passes through. Scroll to follow it, or send one and watch.
           </p>
 
           {/* A hairline breaks the card into two deliberate zones: introduction above, action below -- rather than
               one undifferentiated stack of elements at slightly different sizes. */}
           <div style={delay(0.2)} className="mt-6 animate-fade-up border-t border-border/60 pt-6 motion-reduce:animate-none">
             <RequestCounter />
+            <p className="mt-2.5 max-w-md font-mono text-[11px] leading-relaxed text-muted-foreground">
+              The counter is a simulation. The button is real: it sends one test request through every section of this site.
+            </p>
             <FallbackNote />
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -72,6 +76,8 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
           </div>
         </div>
       </div>
+
+      <HeroGuide className="absolute bottom-10 right-[max(1.5rem,4vw)] hidden w-[32rem] animate-fade-up motion-reduce:animate-none xl:block 2xl:w-[35rem]" />
 
       <a
         href="#about"

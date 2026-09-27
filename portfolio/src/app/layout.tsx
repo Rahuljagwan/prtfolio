@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <noscript>
-          <style>{".reveal{opacity:1!important;transform:none!important}"}</style>
+          <style>{".reveal{opacity:1!important;transform:none!important}.mask-in,.chapter-rule{transform:none!important}"}</style>
         </noscript>
         <Background />
         <ThemeProvider>

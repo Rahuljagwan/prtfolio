@@ -6,6 +6,7 @@ import { useThemeTransition } from "@/hooks/useThemeTransition";
 import { OPEN_HOOD_EVENT, OPEN_TERMINAL_EVENT } from "@/lib/ops";
 import { OPEN_PROJECT_EVENT } from "@/lib/projects/utils";
 import { INCIDENT_EVENT } from "@/lib/world/events";
+import { smoothScrollToId } from "@/lib/scroll-state";
 import type { CommandActions } from "@/lib/commands/types";
 
 /**
@@ -19,7 +20,7 @@ export function useCommandActions(): CommandActions {
 
   return useMemo<CommandActions>(() => {
     const scrollTo = (id: string) => {
-      if (pathname === "/") document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      if (pathname === "/") smoothScrollToId(id);
       else router.push(`/#${id}`);
     };
     return {
