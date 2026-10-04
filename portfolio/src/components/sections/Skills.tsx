@@ -21,7 +21,7 @@ export function Skills({ groups }: { groups: SkillGroup[] }) {
               <Chapter n="06" label="Skills" />
               <Headline lines={["Tools I", "work with."]} className="mt-7 text-5xl md:text-7xl" />
               <Reveal delay={0.2}>
-                <p className="mt-8 max-w-sm text-lg leading-relaxed text-muted-foreground">Grouped by where they sit in the stack, from what people see down to where it runs.</p>
+                <p className="mt-8 max-w-sm text-lg leading-relaxed text-muted-foreground">Grouped by where they sit in the stack, from what people see down to where it runs, then what cuts across all of it.</p>
               </Reveal>
               <Reveal delay={0.28}>
                 <IncidentPanel />

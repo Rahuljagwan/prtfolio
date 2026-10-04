@@ -80,15 +80,16 @@ export function HeroGuide({ className }: { className?: string }) {
   const stateOf = (i: number) => (progress < 0 ? "idle" : i < progress || progress === 6 ? "done" : i === progress ? "active" : "idle");
 
   return (
-    <aside aria-label="How to read this site" className={cn("hero-guide veil veil-soft", className)}>
+    <aside aria-label="How to read this site" className={cn("hero-guide", className)}>
       <p className="mono-label text-primary">Follow the request</p>
-      <p className="guide-intro mt-2 text-[0.8rem] leading-relaxed text-muted-foreground">
+      <p className="guide-intro mt-1.5">
         <span className="world-only">
-          The green ball is <span className="font-medium text-foreground">you</span>: a visitor&apos;s request arriving at my portfolio.{" "}
+          The green ball is <span className="font-medium text-foreground">you</span>, a request crossing six stages.
         </span>
-        Each section is a stage it passes through; the ring fills as it moves.
+        <span className="world-off">Each section is a stage a request passes through.</span>
       </p>
-      <ol className="route mt-5">
+      <div className="thin-scroll -mx-1 mt-4 overflow-x-auto px-1 pb-1">
+      <ol className="route">
         {STAGES.map((s, i) => (
           <li key={s.n}>
             <a href={s.href} data-state={stateOf(i)} data-next={i + 1 < STAGES.length && stateOf(i + 1) !== "idle" ? "on" : "off"} className="rs">
@@ -99,7 +100,8 @@ export function HeroGuide({ className }: { className?: string }) {
           </li>
         ))}
       </ol>
-      <p aria-live="polite" className={cn("mt-4 font-mono text-[11px] leading-relaxed", progress === 6 ? "text-primary" : "text-muted-foreground")}>
+      </div>
+      <p aria-live="polite" data-done={progress === 6 || undefined} className="guide-status mt-3 font-mono">
         {status}
       </p>
     </aside>

@@ -8,7 +8,7 @@ import { POSTMORTEMS, SEVERITY_LABEL, type Severity } from "@/content/postmortem
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Post-incident reviews | Rahul",
+  title: "Post-incident reviews | Rahul Jagwan",
   description: "Blameless incident reviews: timeline, root cause, fix and prevention. Illustrative examples of the format.",
   // Every review here is an illustrative sample, so the page is kept out of search indexing.
   robots: { index: false, follow: true },

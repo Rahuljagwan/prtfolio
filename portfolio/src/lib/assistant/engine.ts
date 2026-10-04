@@ -32,7 +32,7 @@ const ANCHOR_LABEL: Record<Anchor, string> = {
   hero: "Home",
   about: "About",
   experience: "Experience",
-  journey: "Path into automation",
+  journey: "My path",
   projects: "Projects",
   skills: "Skills",
   education: "Education",
@@ -77,7 +77,16 @@ function tokens(s: string): string[] {
 }
 
 // Generic words that should not, on their own, count as a technology match ("rest" in "REST APIs", "response" in "Incident response").
-const GENERIC = new Set(["rest", "incident", "response", "cloud", "development", "design", "management", "system", "security", "control", "job"]);
+const GENERIC = new Set([
+  "rest", "incident", "response", "cloud", "development", "design", "management", "system", "security", "control", "job",
+  // Plain English words that the resume's multi-word skills carry ("Role-Based Access Control", "Server configuration and deployment",
+  // "Rate limiting", "Cross-functional teamwork", "SIT / UAT support", "Progressive Web Apps"...): none of them names a technology on its own,
+  // and "Where is he based?" must not be answered as a question about a technology called "based".
+  // (Words are stemmed before they are compared with this list, so "based" is listed as its stem, "bas".)
+  "role", "based", "bas", "access", "server", "configuration", "deployment", "rate", "limit", "session", "technical", "documentation", "support",
+  "web", "app", "cross", "functional", "debugg", "debug", "troubleshoot", "agile", "collaboration", "finding", "closure", "remediation",
+  "teamwork", "progressive", "material", "toolkit", "query", "compose", "sit", "next",
+]);
 
 // Well-known technologies. If the visitor names one and it is not in the portfolio, the assistant says so plainly.
 const COMMON_TECH = [

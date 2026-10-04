@@ -3,6 +3,7 @@ import { ScrollProgress } from "@/components/layout/ScrollProgress";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Cursor } from "@/components/layout/Cursor";
+import { SoundController } from "@/components/audio/SoundController";
 import { SpotlightController } from "@/components/ui/SpotlightController";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { Hero } from "@/components/sections/Hero";
@@ -29,6 +30,7 @@ export default async function Home() {
       <Cursor />
       <WorldCanvas />
       <SpotlightController />
+      <SoundController />
       <ScrollJourney />
       <JourneyRail />
       <CaseStudyLayer projects={projects} />

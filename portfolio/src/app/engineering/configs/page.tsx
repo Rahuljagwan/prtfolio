@@ -10,7 +10,7 @@ import { CONFIGS } from "@/content/configs";
 import { getPortfolio } from "@/lib/portfolio";
 
 export const metadata: Metadata = {
-  title: "Config gallery | Rahul",
+  title: "Config gallery | Rahul Jagwan",
   description: "Sanitised Nginx, systemd and CI configuration, annotated line by line.",
   // Every example is an illustrative sample, so the page is kept out of search indexing.
   robots: { index: false, follow: true },

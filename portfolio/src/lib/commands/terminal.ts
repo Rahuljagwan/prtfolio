@@ -108,7 +108,7 @@ const COMMANDS: Command[] = [
     summary: "who runs this site",
     run: (_a, { data }) => {
       const p = data.profile;
-      if (!p) return { lines: [out("Rahul, full-stack developer")] };
+      if (!p) return { lines: [out("Rahul Jagwan, Software Engineer")] };
       return { lines: [out(p.name, "accent"), out(p.role), out(p.headline, "dim"), out(`${p.location} · ${p.availability}`, "dim")] };
     },
   },

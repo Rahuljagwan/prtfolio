@@ -9,8 +9,8 @@ import { SHOW_SAMPLES } from "@/lib/samples";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Learning roadmap | Rahul",
-  description: "From full-stack developer to DevOps: what is done, what is in progress and what is next.",
+  title: "Learning roadmap | Rahul Jagwan",
+  description: "From software engineer toward DevOps: what is done, what is in progress and what is next.",
 };
 
 const COLUMNS: { status: RoadmapStatus; label: string; dot: string }[] = [
@@ -24,7 +24,7 @@ export default async function RoadmapPage() {
 
   return (
     <SubpageShell current="Engineering">
-      <PageHeader eyebrow="Roadmap" title="From full-stack to DevOps." intro="Where I have been, what I am working on, and what comes next. No percentages: an item is done, in progress, or next." />
+      <PageHeader eyebrow="Roadmap" title="From full stack toward DevOps." intro="Where I have been, what I am working on, and what comes next. No percentages: an item is done, in progress, or next." />
 
       <section className="mt-12">
         <h2 className="text-xs font-medium uppercase tracking-wider text-primary">The milestones</h2>

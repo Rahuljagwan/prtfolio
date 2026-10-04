@@ -37,6 +37,21 @@ export const ZERO_POSE: Readonly<Pose> = { dx: 0, dy: 0, dz: 0, yaw: 0, pitch: 0
 /** The lens the world is built for (WorldScene's camera prop). The tunnel widens and narrows it around this. */
 export const WORLD_FOV = 42;
 
+/**
+ * 0 on a wide screen, 1 on a tall narrow one (a phone held upright): how far the world is adapted for portrait. The scene is composed
+ * for a landscape window; on a phone the same lens would show a thin slice of it, so the lens widens and a few things re-centre.
+ */
+export const portraitFactor = (aspect: number) => smootherstep((1.15 - finite(aspect, 1.6)) / 0.6);
+
+/**
+ * 1 when the screen is narrow enough that the Projects flight docks its text under the 3D (below 1024 px wide), 0 once there is room for the
+ * text beside it, blended over 80 px so a resize never snaps. The page's own layout switches at the same width (FlightView uses `lg:`).
+ */
+export const narrowFactor = (width: number) => smootherstep((1040 - finite(width, 1280)) / 80);
+
+/** The lens for a screen of this aspect ratio: the desktop lens when wide, widening (to 64 degrees) as the screen gets taller than it is wide. */
+export const baseFovFor = (aspect: number) => WORLD_FOV + 22 * portraitFactor(aspect);
+
 const finite = (n: number, fallback = 0) => (Number.isFinite(n) ? n : fallback);
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, finite(x, lo)));
 export const clamp01 = (x: number) => clamp(x, 0, 1);

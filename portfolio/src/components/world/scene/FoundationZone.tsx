@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { BoxGeometry, BufferAttribute, BufferGeometry, Color, Euler, type InstancedMesh, Matrix4, MeshBasicMaterial, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
 import type { RigCurves } from "@/lib/world/rig-path";
+import { HELI } from "@/lib/world/heli-math";
 import { ZONES } from "@/lib/world/zones";
 import { makeCityMaterial } from "./CityZone";
 import type { WorldPalette } from "./palette";
@@ -22,6 +23,12 @@ const PILLAR_W = 0.2; // well under opening/6 (~1.47), so it reads as a slender 
 const PILLAR_LOWER_FRAC = 0.8; // fraction of the height that is the wider lower segment, before it tapers
 const PILLAR_TAPER = 0.78; // the upper segment's width, as a fraction of the lower one
 const LINTEL_H = 0.2;
+// The camera rides the same route the gate straddles, so just before it passes through, the lintel (0.2 thick, 8.8 wide, a little
+// above eye level) fills a wide stripe across the screen and the status bar under it a thin one: a hard-edged band across the
+// scene mid-scroll. The gate therefore dissolves as the camera closes in on it (distance along the route, in world units): fully
+// solid from GATE_NEAR_FULL away, gone by GATE_NEAR_GONE, so the frame is clean as the camera passes through.
+const GATE_NEAR_GONE = 3;
+const GATE_NEAR_FULL = 9;
 
 // ---- the occasional 403: an ambient packet that approaches the gate off-centre and gets turned away. Same visual
 // technique as the visitor's own request in RequestOriginZone (sphere + halo + short instanced trail, eased in and
@@ -208,6 +215,7 @@ export function FoundationZone({ palette, dark, curves, shared }: { palette: Wor
   const antMesh = useRef<InstancedMesh>(null);
   const mats = useRef<Mats>({});
   const fade = useRef(-1);
+  const gateFade = useRef(-1);
   const invalidate = useThree((s) => s.invalidate);
 
   const { blocks: footings, masts } = useMemo(makeDistrict, []);
@@ -304,6 +312,7 @@ export function FoundationZone({ palette, dark, curves, shared }: { palette: Wor
     rejectHaloMat.color.copy(rejectAccent);
     rejectTrailMat.color.copy(rejectAccent);
     fade.current = -1; // force opacity refresh
+    gateFade.current = -1;
   }, [palette, dark, cityMat, uni, statusColor, rejectAccent, rejectFlashColor, rejectHaloMat, rejectTrailMat]);
 
   useEffect(
@@ -322,7 +331,7 @@ export function FoundationZone({ palette, dark, curves, shared }: { palette: Wor
     [grid, edges, ringGeo, horizonGeo, boxGeo, cityMat, rejectPacketMat, rejectHaloMat, rejectTrailMat],
   );
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const u = shared.current.u;
     const g = root.current;
     if (!g) return;
@@ -341,15 +350,25 @@ export function FoundationZone({ palette, dark, curves, shared }: { palette: Wor
       uni.uFade.value = f; // opaque and depth-tested; dissolves with a dither, and is fully in by the About plateau
       if (M.ants) M.ants.opacity = 0.9 * f;
       if (M.horizon) M.horizon.opacity = 0.35 * f;
-      if (M.gate) M.gate.opacity = 0.85 * f;
     }
     if (rings.current) rings.current.rotation.y += Math.min(delta, 0.05) * 0.05; // the zone's only motion
 
+    // The gate (and its status bar) dissolve as the camera closes in on it, so the lintel never cuts a band across the frame.
+    const cam = state.camera.position;
+    const along = Math.abs((cam.x - gateLayout.base.x) * gateLayout.forward.x + (cam.z - gateLayout.base.z) * gateLayout.forward.z);
+    const near = smooth((along - GATE_NEAR_GONE) / (GATE_NEAR_FULL - GATE_NEAR_GONE));
+    const gf = f * near;
+    const M = mats.current;
+    if (M.gate && Math.abs(gf - gateFade.current) > 0.002) {
+      gateFade.current = gf;
+      M.gate.opacity = 0.85 * gf;
+    }
+
     // The status bar under the lintel: a slow pulse, saying the gate is open, independent of the zone's own fade-in.
-    const sbMat = mats.current.statusBar;
+    const sbMat = M.statusBar;
     if (sbMat) {
       const pulse = 0.5 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() * 0.0016));
-      sbMat.opacity = f * pulse;
+      sbMat.opacity = gf * pulse;
     }
 
     // The occasional 403: on a timer, an ambient request approaches the gate off-centre and gets turned away.
@@ -415,7 +434,8 @@ export function FoundationZone({ palette, dark, curves, shared }: { palette: Wor
       <lineSegments geometry={grid.major} position={[0, GROUND_Y, 0]}>
         <lineBasicMaterial ref={bind("major")} transparent opacity={0} depthWrite={false} />
       </lineSegments>
-      <group position={[0, 0, -14]}>
+      {/* The helipad: its centre is shared with the helicopter that parks on it (lib/world/heli-math.ts). */}
+      <group position={[HELI.PAD.x, 0, HELI.PAD.z]}>
         <lineSegments ref={rings} geometry={ringGeo}>
           <lineBasicMaterial ref={bind("rings")} transparent opacity={0} depthWrite={false} />
         </lineSegments>

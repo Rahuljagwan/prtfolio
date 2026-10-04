@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, ExternalLink } from "lucide-react";
 import { Chip } from "@/components/ui/Chip";
 import { SampleChip } from "@/components/ui/SampleChip";
+import { cue } from "@/lib/audio/cues";
 import { cn } from "@/lib/utils";
 import { OPEN_PROJECT_EVENT, hasCaseStudy } from "@/lib/projects/utils";
 import { architectureFor, rackLayers } from "@/lib/projects/architecture";
@@ -29,12 +30,14 @@ const typing = (t: EventTarget | null) => t instanceof HTMLElement && !!t.closes
  * each frame), while the text on the left shows the project the camera is on. The scroll stays the single source of truth:
  * the rail, the arrow keys and j / k just scroll the page to the matching spot.
  *
- * Only offered when the 3D world is running (see ProjectsClient); phones, reduced motion and no-WebGL get the other views.
+ * Only offered when the 3D world is running (see ProjectsClient); reduced motion, data saver and no-WebGL get the other views. Below 1024 px wide the text docks
+ * under the 3D (the camera squares up to the rack to match: see StationsCamera).
  */
 export function FlightView({ projects }: { projects: Project[] }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const n = projects.length;
+  const settled = useRef(false);
 
   const infos = useMemo(() => projects.map((p) => ({ id: p.id, label: labelOf(p), status: p.status, layers: rackLayers(architectureFor(p.stack)), exhibit: p.exhibit })), [projects]);
 
@@ -69,6 +72,15 @@ export function FlightView({ projects }: { projects: Project[] }) {
       if (raf) cancelAnimationFrame(raf);
     };
   }, [n]);
+
+  // The flight's own sound: a sweep and a note as the camera moves on to another project (not on the first render).
+  useEffect(() => {
+    if (!settled.current) {
+      settled.current = true;
+      return;
+    }
+    cue("station", active);
+  }, [active]);
 
   const goTo = useCallback(
     (i: number) => {
@@ -114,9 +126,11 @@ export function FlightView({ projects }: { projects: Project[] }) {
 
   return (
     <div ref={track} role="region" aria-label="Project flight" style={{ height: `${trackHeightVh(n, STEP_VH)}vh` }} className="relative">
-      <div className="sticky top-0 flex h-screen items-center pt-14">
+      <div className="sticky top-0 flex h-screen items-end pb-5 pt-14 lg:items-center lg:pb-0">
         {/* A soft veil behind the text only: the world stays visible everywhere else. */}
-        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 -ml-[50vw] w-[62vw] bg-gradient-to-r from-background/90 via-background/70 to-transparent" />
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 -ml-[50vw] hidden w-[62vw] bg-gradient-to-r from-background/90 via-background/70 to-transparent lg:block" />
+        {/* On a phone the text is docked to the bottom and the rack rides above it, so the veil is a bottom fade instead. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[66%] bg-gradient-to-t from-background/95 via-background/85 to-transparent lg:hidden" />
 
         <div className="relative w-full">
           {/* Screen readers get a plain announcement; the visible copy below is decorative motion around it. */}
@@ -132,18 +146,20 @@ export function FlightView({ projects }: { projects: Project[] }) {
               <StatusChip project={project} />
               {project.sample && <SampleChip />}
             </div>
-            <h3 className="mt-4 text-3xl font-semibold leading-tight tracking-tight md:text-4xl">{project.title}</h3>
+            <h3 className="mt-3 text-2xl font-semibold leading-tight tracking-tight md:mt-4 md:text-4xl">{project.title}</h3>
 
             {redacted ? (
               <RedactedSummary publicSummary={project.confidential!.publicSummary} bars={project.confidential!.bars} />
             ) : (
-              <p className="mt-4 leading-relaxed text-muted-foreground">{project.summary}</p>
+              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-foreground/80 md:mt-4 md:line-clamp-none md:text-base md:text-muted-foreground">{project.summary}</p>
             )}
 
             <p className="mt-4 text-xs text-muted-foreground">
               <span className="uppercase tracking-wider">Role</span> · <span className="text-foreground">{project.role}</span>
             </p>
-            <OwnershipBar ownership={project.ownership} className="mt-5 max-w-xs" />
+            <div className="hidden lg:block">
+              <OwnershipBar ownership={project.ownership} className="mt-5 max-w-xs" />
+            </div>
 
             {!redacted && project.highlights.length > 0 && (
               <ul className="mt-5 hidden space-y-1.5 text-sm text-muted-foreground [@media(min-height:1000px)]:block">
@@ -155,10 +171,18 @@ export function FlightView({ projects }: { projects: Project[] }) {
                 ))}
               </ul>
             )}
-            <MetricsStrip metrics={project.metrics} sample={project.sampleFields?.includes("metrics")} className="mt-5" />
+            <div className="hidden lg:block">
+              <MetricsStrip metrics={project.metrics} sample={project.sampleFields?.includes("metrics")} className="mt-5" />
+            </div>
 
+            {/* On a phone the stack is a row of chips (the rack above it already shows the layers); the full top-to-bottom list is for wider screens. */}
+            <div className="mt-4 flex flex-wrap gap-1.5 lg:hidden">
+              {project.stack.slice(0, 6).map((s) => (
+                <Chip key={s}>{s}</Chip>
+              ))}
+            </div>
             {infos[active]?.layers.length ? (
-              <div className="mt-5">
+              <div className="mt-5 hidden lg:block">
                 <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">The stack, top to bottom</p>
                 <dl className="mt-2 space-y-1.5">
                   {infos[active].layers.map((l) => (
@@ -170,7 +194,7 @@ export function FlightView({ projects }: { projects: Project[] }) {
                 </dl>
               </div>
             ) : (
-              <div className="mt-5 flex flex-wrap gap-1.5">
+              <div className="mt-5 hidden flex-wrap gap-1.5 lg:flex">
                 {project.stack.map((s) => (
                   <Chip key={s}>{s}</Chip>
                 ))}
@@ -178,7 +202,7 @@ export function FlightView({ projects }: { projects: Project[] }) {
             )}
 
             {(caseStudy || project.links?.live || project.slug) && (
-              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 lg:mt-6">
                 {caseStudy && (
                   <button
                     type="button"
@@ -209,7 +233,7 @@ export function FlightView({ projects }: { projects: Project[] }) {
           </motion.div>
 
           {/* Progress rail: one tick per project. Click to fly there. */}
-          <div className="mt-10 flex items-center gap-4">
+          <div className="mt-5 flex items-center gap-4 lg:mt-10">
             <ol className="flex items-center gap-1.5" aria-label="Projects">
               {projects.map((p, i) => (
                 <li key={p.id}>
@@ -227,7 +251,7 @@ export function FlightView({ projects }: { projects: Project[] }) {
             </ol>
             <span className="hidden font-mono text-[11px] uppercase tracking-wider text-muted-foreground sm:inline">scroll or ↑ ↓ to fly</span>
           </div>
-          <div className="mt-3 flex items-start gap-2 text-xs text-muted-foreground [@media(max-height:820px)]:hidden">
+          <div className="mt-3 hidden items-start gap-2 text-xs text-muted-foreground lg:flex [@media(max-height:820px)]:hidden">
             <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
             <p className="max-w-md">
               {captionFor(project.exhibit) ? (

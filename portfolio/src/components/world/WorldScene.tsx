@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Fog } from "three";
 import { makeCurves } from "@/lib/world/rig-path";
 import { WORLD_FOV, type SectionExtent } from "@/lib/world/tunnel-math";
+import { worldMaxDpr, worldTier } from "@/lib/world/capability";
 import { makeGovernor, stepGovernor, type Governor } from "@/lib/world/quality";
 import { getScrollY } from "@/lib/scroll-state";
 import type { ZoneLayout } from "@/lib/world/rig-math";
@@ -17,13 +18,16 @@ import { TunnelCamera } from "./scene/TunnelCamera";
 import { SpeedStreaks } from "./scene/SpeedStreaks";
 import { RouteDust, RouteFlow, RouteLine } from "./scene/RouteAndDust";
 import { GroundPlane } from "./scene/GroundPlane";
+import { CityTraffic } from "./scene/CityTraffic";
 import { CityZone } from "./scene/CityZone";
 import { DeploymentsZone } from "./scene/DeploymentsZone";
 import { FoundationZone } from "./scene/FoundationZone";
+import { Helicopter } from "./scene/Helicopter";
 import { StackZone } from "./scene/StackZone";
 import { RequestOriginZone } from "./scene/RequestOriginZone";
 import { WAKE_EVENT, useRenderScheduler } from "./scene/useRenderScheduler";
 import { SignalOutZone } from "./scene/SignalOutZone";
+import { BeaconSatellites } from "./scene/BeaconSatellites";
 
 // Loaded lazily by WorldCanvas. Everything is procedural (no models, textures or HDRIs).
 
@@ -54,6 +58,7 @@ function World({ dark, host, layouts, sections, onReady }: Pick<WorldSceneProps,
   const scene = useThree((s) => s.scene);
   const shared = useRef<RigShared>({ u: 0, zone: 0 });
   const curves = useMemo(() => makeCurves(ZONES), []);
+  const lite = useMemo(() => worldTier() === "lite", []); // phones and modest hardware: the same world on a lighter budget
 
   useRenderScheduler();
   useAdaptiveDpr();
@@ -90,17 +95,21 @@ function World({ dark, host, layouts, sections, onReady }: Pick<WorldSceneProps,
       <ambientLight intensity={dark ? 0.5 : 0.9} />
       <directionalLight position={[4, 5, 6]} intensity={dark ? 2.2 : 1.6} />
       <RouteLine curves={curves} palette={palette} shared={shared} />
-      <RouteDust curves={curves} palette={palette} count={550} shared={shared} />
+      <RouteDust curves={curves} palette={palette} count={lite ? 260 : 550} shared={shared} />
       <RouteFlow curves={curves} palette={palette} shared={shared} />
       <SpeedStreaks curves={curves} palette={palette} shared={shared} />
       <GroundPlane palette={palette} shared={shared} />
       <RequestOriginZone palette={palette} curves={curves} shared={shared} />
       <FoundationZone palette={palette} dark={dark} curves={curves} shared={shared} />
+      {/* After FoundationZone (it lands on that zone's helipad rings) and after the rig, which sets the u and local it reads. */}
+      <Helicopter palette={palette} dark={dark} curves={curves} shared={shared} />
       <CityZone palette={palette} dark={dark} curves={curves} shared={shared} />
+      <CityTraffic palette={palette} dark={dark} curves={curves} shared={shared} />
       <DeploymentsZone palette={palette} dark={dark} curves={curves} shared={shared} />
       <StackZone palette={palette} curves={curves} shared={shared} sections={sections} />
       <ProjectPods dark={dark} shared={shared} />
       <SignalOutZone palette={palette} shared={shared} />
+      <BeaconSatellites palette={palette} dark={dark} shared={shared} />
     </>
   );
 }
@@ -116,10 +125,11 @@ export interface WorldSceneProps {
 }
 
 export default function WorldScene({ dark, host, layouts, sections, onReady, onLost }: WorldSceneProps) {
+  const maxDpr = useMemo(() => worldMaxDpr(), []);
   return (
     <Canvas
       frameloop="demand"
-      dpr={[1, 1.25]}
+      dpr={[1, maxDpr]}
       camera={{ fov: WORLD_FOV, near: 0.1, far: 80, position: ZONES[0].camera.position }}
       // failIfMajorPerformanceCaveat: a machine with only software rendering gets no context, so it keeps the static hero.
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance", failIfMajorPerformanceCaveat: true }}

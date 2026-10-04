@@ -18,7 +18,7 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
     <section id="hero" className="relative flex min-h-screen items-center overflow-hidden">
       <HeroFallback />
 
-      <div className="container relative pt-24">
+      <div className="container relative pb-14 pt-24 xl:pb-0">
         <div className="inline-block max-w-2xl">
           <span className="inline-flex animate-fade-up items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur motion-reduce:animate-none">
             <span className="relative flex h-2 w-2">
@@ -50,11 +50,11 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
               one undifferentiated stack of elements at slightly different sizes. */}
           <div style={delay(0.2)} className="mt-6 animate-fade-up border-t border-border/60 pt-6 motion-reduce:animate-none">
             <RequestCounter />
-            {/* Below md, this replaces the caption line: the orb (OriginOrb) shows the same idea directly instead of describing
+            {/* Below lg, this replaces the caption line: the orb (OriginOrb) shows the same idea directly instead of describing
                 it in a sentence, in the space the caption would have taken. Its wide-screen counterpart sits beside the text
                 (below, a section-level sibling, not nested here -- see OriginOrb's own comment for why). */}
-            <OriginOrb className="relative my-1 flex justify-center md:hidden" />
-            <p className="mt-2.5 hidden max-w-md font-mono text-[11px] leading-relaxed text-muted-foreground md:block">
+            <OriginOrb anchor className="relative my-3 flex justify-center lg:hidden" />
+            <p className="mt-2.5 hidden max-w-md font-mono text-[11px] leading-relaxed text-muted-foreground lg:block">
               The counter is a simulation. The button is real: it sends one test request through every section of this site.
               {" "}To the right, the lightweight build: the same idea, without the full 3D scene.
             </p>
@@ -79,18 +79,22 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
             </div>
           </div>
         </div>
+
+        {/* Below xl there is no room beside the text, so the same legend sits under the buttons (its stages scroll sideways if they must). */}
+        <HeroGuide className="mt-10 max-w-2xl animate-fade-up motion-reduce:animate-none xl:hidden" />
       </div>
 
       {/* The wide-screen counterpart to the inline orb above: same component, positioned against the section itself (like
-          HeroGuide below) rather than nested in the text column, so its containing block is the full hero, not that column. */}
-      <OriginOrb className="absolute right-[6%] top-1/2 hidden -translate-y-1/2 md:block" />
+          HeroGuide below) rather than nested in the text column, so its containing block is the full hero, not that column.
+          .origin-orb-wide puts it exactly where the 3D origin node is drawn, so the hand-over to the 3D world has no jump. */}
+      <OriginOrb className="origin-orb-wide absolute hidden lg:block" />
 
-      <HeroGuide className="absolute bottom-10 right-[max(1.5rem,4vw)] hidden w-[32rem] animate-fade-up motion-reduce:animate-none xl:block 2xl:w-[35rem]" />
+      <HeroGuide className="absolute bottom-8 right-[max(1.5rem,4vw)] hidden w-[34rem] animate-fade-up motion-reduce:animate-none xl:block 2xl:w-[36rem]" />
 
       <a
         href="#about"
         aria-label="Scroll to about section"
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground transition-colors hover:text-foreground"
+        className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 text-muted-foreground transition-colors hover:text-foreground xl:block"
       >
         <ArrowDown size={20} className="animate-bounce motion-reduce:animate-none" />
       </a>

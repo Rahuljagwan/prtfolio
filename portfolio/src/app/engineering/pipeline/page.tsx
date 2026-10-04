@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/engineering/parts";
 import { PipelinePlayground } from "@/components/engineering/PipelinePlayground";
 
 export const metadata: Metadata = {
-  title: "Pipeline playground | Rahul",
+  title: "Pipeline playground | Rahul Jagwan",
   description: "A simulated release pipeline: push a release through lint, tests, staging and a canary, break a step on purpose, and roll back.",
 };
 

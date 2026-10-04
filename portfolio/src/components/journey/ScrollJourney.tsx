@@ -12,17 +12,17 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min);
  * every section stays a server component. (The big journey motion is the 3D camera, see components/world.)
  *
  *  - Skills:  the chips fly in from scattered positions and settle as the section scrolls into view.
- *  - Journey: each milestone card slides into place as it enters.
  *  - Anything marked data-parallax drifts against the scroll as its section passes, for depth.
  *
- * Desktop-class devices with motion allowed only; phones, touch devices, small windows and reduced-motion users get the
- * normal static layout. Everything animates transform/opacity only. It does no work unless the page is scrolling
+ * Everywhere motion is allowed (reduced-motion users get the normal static layout); distances scale down on small screens.
+ * Everything animates transform/opacity only. It does no work unless the page is scrolling
  * (see lib/scroll-scrub.ts), and it starts after the page has loaded and gone idle.
  */
 export function ScrollJourney() {
   useEffect(() => {
-    const media = (q: string) => window.matchMedia(q).matches;
-    if (media("(prefers-reduced-motion: reduce)") || media("(pointer: coarse)") || window.innerWidth < 1024) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Phones and tablets get the same effects, scaled to the screen so nothing flies further than the screen is wide.
+    const k = Math.min(1, Math.max(0.35, window.innerWidth / 1280));
 
     const stops: (() => void)[] = [];
     const cleanups: (() => void)[] = [];
@@ -35,7 +35,7 @@ export function ScrollJourney() {
       if (skills && chips.length > 0) {
         const spread = 0.4; // how much of the range is used to stagger the chips
         const order = chips.map((_, i) => i).sort(() => Math.random() - 0.5);
-        const params = chips.map((_, i) => ({ x: rand(-140, 140), y: rand(-90, 90), r: rand(-24, 24), delay: (order.indexOf(i) / chips.length) * spread }));
+        const params = chips.map((_, i) => ({ x: rand(-140, 140) * k, y: rand(-90, 90) * k, r: rand(-24, 24), delay: (order.indexOf(i) / chips.length) * spread }));
 
         stops.push(
           scrub({ trigger: skills, start: 0.88, end: 0.3 }, (p) => {
@@ -61,22 +61,10 @@ export function ScrollJourney() {
         );
       }
 
-      // ---- Journey: milestone cards slide into place
-      // Each stage slides in from the right as it scrolls into view (a slightly longer run for every second one).
-      document.querySelectorAll<HTMLElement>("#journey [data-assemble-card]").forEach((card, i) => {
-        const offset = i % 2 === 0 ? 60 : 90;
-        stops.push(
-          scrub({ trigger: card, start: 0.92, end: 0.62 }, (p) => {
-            card.style.transform = p >= 1 ? "" : `translate3d(${offset * (1 - easeOut(p))}px, 0, 0) scale(${0.95 + 0.05 * easeOut(p)})`;
-          }),
-        );
-        cleanups.push(() => (card.style.transform = ""));
-      });
-
       // Depth: anything marked data-parallax="0.3" drifts against the scroll as its section passes (a fraction of 240px either
       // side of centre), so big numerals, the vault dial and the resume sheets sit at a different depth from the text.
       document.querySelectorAll<HTMLElement>("[data-parallax]").forEach((el) => {
-        const amount = (Number(el.dataset.parallax) || 0.3) * 240;
+        const amount = (Number(el.dataset.parallax) || 0.3) * 240 * Math.max(0.5, k);
         const trigger = el.closest<HTMLElement>("section") ?? el;
         stops.push(
           scrub({ trigger, start: 1, end: 0, endEdge: "bottom" }, (p) => {

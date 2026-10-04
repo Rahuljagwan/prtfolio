@@ -19,7 +19,7 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 // ---- topic questions
 {
   const a = ask("What projects has Rahul built?");
-  check("projects: lists all eight by title", has(a.answer, "Rahul has 8 projects", "Saarthi", "InfraDesk", "Soochna", "Sakshar", "Print Tracker", "DellCube", "JMD", "CVEarity"), a.answer);
+  check("projects: lists all eight by title", has(a.answer, "Rahul Jagwan has 8 projects", "Saarthi", "InfraDesk", "Soochna", "Sakshar", "Print Tracker", "DellCube", "JMD", "CVEarity"), a.answer);
   check("projects: cites the Projects section", a.sources.some((s) => s.anchor === "projects") && a.grounded);
 }
 {
@@ -37,7 +37,7 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 {
   const a = ask("Where did he study?");
   check("education: institution, degree and period", has(a.answer, "Universal College of Engineering", "Bachelor of Engineering", "2021"), a.answer);
-  check("education: uses the stored CGPA text, nothing more", has(a.answer, "CGPA 8.7"), a.answer);
+  check("education: uses the stored CGPA text, and lists the resume's certifications", has(a.answer, "CGPA: 8.7", "J.P. Morgan", "Walmart", "Udemy"), a.answer);
 }
 {
   const a = ask("What is his CGPA?");
@@ -49,16 +49,16 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 }
 {
   const a = ask("Is he open to work?");
-  check("availability: quotes the stored availability text", has(a.answer, "Open to new opportunities"), a.answer);
+  check("availability: quotes the stored availability text", has(a.answer, "Open to backend, full stack and DevOps roles"), a.answer);
 }
 {
   const a = ask("How did he move into DevOps?");
-  check("journey: returns the stored story and milestones", has(a.answer, "full-stack developer", "Docker", "Milestones"), a.answer);
+  check("journey: returns the stored story and milestones", has(a.answer, "MERN", "SBFC Finance Limited", "Milestones"), a.answer);
   check("journey: cites the journey section", a.sources.some((s) => s.anchor === "journey"));
 }
 {
   const a = ask("What is his work experience?");
-  check("experience: role, organisation and period", has(a.answer, "Software Engineer", "Enterprise NBFC / Fintech", "Dec 2025"), a.answer);
+  check("experience: role, organisation and period", has(a.answer, "Software Engineer", "SBFC Finance Limited", "Dec 2025", "Mumbai"), a.answer);
 }
 {
   const a = ask("How many years of experience does he have?");
@@ -66,26 +66,26 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 }
 {
   const a = ask("Who is Rahul?");
-  check("about: introduces from the profile", has(a.answer, "Full-Stack Developer", "Delhi"), a.answer);
+  check("about: introduces from the profile", has(a.answer, "Software Engineer", "Mumbai", "SBFC Finance Limited"), a.answer);
 }
 {
   const a = ask("What are his skills?");
-  check("skills: lists the groups", has(a.answer, "Frontend", "Backend", "DevOps & Cloud"), a.answer);
+  check("skills: lists the resume's groups", has(a.answer, "Frontend", "Backend", "Databases", "Cloud & DevOps", "Testing & Security", "Languages", "Practices"), a.answer);
 }
 {
   const a = ask("Where is he based?");
-  check("location: from the stored facts", has(a.answer, "Delhi"), a.answer);
+  check("location: from the stored facts (and not hijacked by the 'based' in Role-Based Access Control)", has(a.answer, "Mumbai") && hasNone(a.answer, "appears in"), a.answer);
 }
 
 // ---- technology questions
 {
   const a = ask("Does he know Docker?");
-  check("tech: Docker is found in Skills and the career path", a.grounded && has(a.answer, "Yes", "Docker", "Skills: DevOps & Cloud", "Career path"), a.answer);
+  check("tech: Docker is found in Skills and in the projects that list it", a.grounded && has(a.answer, "Yes", "Docker", "Skills: Cloud & DevOps", "Project: Soochna"), a.answer);
   check("tech: a project is credited with Docker only where its stack lists it", has(a.answer, "Project: Soochna", "Project: Print Tracker") && hasNone(a.answer, "Project: Admin Portal", "Project: InfraDesk", "Project: Sakshar"), a.answer);
 }
 {
   const a = ask("What is his AWS experience?");
-  check("tech: AWS EC2 found in projects and experience", a.grounded && has(a.answer, "Yes", "Experience: Software Engineer", "Project:"), a.answer);
+  check("tech: AWS is found only where the resume lists it (AWS Bedrock), and EC2 is never claimed", a.grounded && has(a.answer, "Yes", "Project: Sakshar", "Skills: Cloud & DevOps") && hasNone(a.answer, "EC2"), a.answer);
 }
 {
   const a = ask("Does Rahul know Kubernetes?");
@@ -93,7 +93,7 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 }
 {
   const a = ask("Does he know Java?");
-  check("tech: Java is not confused with JavaScript", !a.grounded && has(a.answer, "couldn't find", "Java") && hasNone(a.answer, "Yes,"), a.answer);
+  check("tech: Java is in Languages (the resume lists it), found as Java and not as JavaScript", a.grounded && has(a.answer, "Yes", "Java", "Skills: Languages"), a.answer);
 }
 {
   const a = ask("Does he use Docker and Terraform?");
@@ -101,7 +101,7 @@ const hasNone = (text: string, ...needles: string[]) => needles.every((n) => !te
 }
 {
   const a = ask("Does he know CI/CD?");
-  check("tech: CI/CD is matched", a.grounded && has(a.answer, "CI/CD"), a.answer);
+  check("tech: CI/CD is not in the resume, so it says so", !a.grounded && has(a.answer, "couldn't find"), a.answer);
 }
 {
   const withPlanned: Portfolio = {

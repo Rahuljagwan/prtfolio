@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, type MutableRefObject, type RefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
-import { computeRig, projectsWeave, type ZoneLayout } from "@/lib/world/rig-math";
+import { computeRig, projectsWeave, smootherstep, type ZoneLayout } from "@/lib/world/rig-math";
+import { portraitFactor } from "@/lib/world/tunnel-math";
 import { sampleRig, type RigCurves } from "@/lib/world/rig-path";
 import { ZONES } from "@/lib/world/zones";
+import { audioScene } from "@/lib/audio/state";
 import { getScrollY } from "@/lib/scroll-state";
 
 /** Shared, mutable rig state that zones read each frame (no React state, so no re-renders while scrolling). */
@@ -52,7 +54,7 @@ export function RigDriver({ curves, layouts, host, shared, onReady }: RigDriverP
     invalidate(); // demand mode: draw the first frame
   }, [invalidate]);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1);
     const centre = getScrollY() + window.innerHeight / 2; // fractional while Lenis is gliding, so the camera never steps a whole pixel at a time
     const { u: goal, local } = computeRig(centre, layouts.current ?? []);
@@ -64,6 +66,8 @@ export function RigDriver({ curves, layouts, host, shared, onReady }: RigDriverP
     }
     const u = shared.current.u;
     shared.current.zone = Math.min(ZONES.length - 1, Math.max(0, Math.round(u)));
+    audioScene.u = u; // for the sound design (lib/audio): where on the route the camera is, and that the world is drawing
+    audioScene.frameAt = performance.now();
     shared.current.local = local;
 
     sampleRig(u, ZONES.length, curves, position, target);
@@ -83,6 +87,11 @@ export function RigDriver({ curves, layouts, host, shared, onReady }: RigDriverP
       target.x += w.targetX;
       bank = w.bank;
     }
+
+    // The closing beacon sits right of the route (BEACON in zones.ts), clear of the contact copy on a wide screen. On a portrait screen the
+    // same lens shows a thin slice, which would leave it at the very edge, so the last stretch of the journey turns the view toward it.
+    const portrait = portraitFactor(state.size.width / Math.max(1, state.size.height));
+    if (portrait > 0) target.x += portrait * 3.4 * smootherstep((u - 3.9) / 1.1);
 
     camera.position.copy(position);
     camera.lookAt(target);

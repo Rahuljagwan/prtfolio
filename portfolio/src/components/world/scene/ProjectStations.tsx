@@ -5,7 +5,8 @@ import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { BoxGeometry, BufferAttribute, BufferGeometry, CircleGeometry, Color, type InstancedMesh, Matrix4, MeshBasicMaterial, MeshStandardMaterial, LineBasicMaterial, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
-import { RACK, activeIndex, flightWeight, focusAt, indexFromProgress, progressFromRect, rackFloorY, rackTopY, slabCount, slabWidth, slabY, stationLayout, stepEase, type Vec3 } from "@/lib/world/station-math";
+import { RACK, STATION, activeIndex, flightWeight, focusAt, indexFromProgress, progressFromRect, rackFloorY, rackTopY, slabCount, slabWidth, slabY, stationLayout, stepEase, type Vec3 } from "@/lib/world/station-math";
+import { narrowFactor } from "@/lib/world/tunnel-math";
 import { isExhibitKey } from "@/lib/projects/exhibits";
 import { stationsState, subscribeStations } from "@/lib/world/stations";
 import { getScrollY } from "@/lib/scroll-state";
@@ -102,6 +103,18 @@ function StationsCamera({ flight }: { flight: MutableRefObject<Flight> }) {
     const focus = focusAt(f.t, n);
     tmp.pos.set(...focus.position);
     tmp.tgt.set(...focus.target);
+    // On a narrow screen there is no "left for the text, right for the rack": the text docks under the 3D, so the camera squares up to the
+    // rack (no sideways offset), backs off to fit it, and aims below it so it rides in the upper part of the screen (about 42% of the
+    // screen's half-height above the middle, wherever the lens is).
+    const narrow = narrowFactor(state.size.width);
+    if (narrow > 0) {
+      const back = 4.6 * narrow;
+      const halfH = Math.tan(((state.camera as THREE.PerspectiveCamera).fov * Math.PI) / 360) * (STATION.camOffset[2] + back);
+      tmp.pos.x -= STATION.camOffset[0] * narrow;
+      tmp.pos.z += back;
+      tmp.tgt.x -= STATION.lookOffset[0] * narrow;
+      tmp.tgt.y -= 0.42 * halfH * narrow;
+    }
     tmp.m.lookAt(tmp.pos, tmp.tgt, tmp.up);
     tmp.q.setFromRotationMatrix(tmp.m);
     if (focus.travel > 0) tmp.q.multiply(tmp.roll.setFromAxisAngle(tmp.z, -focus.direction * focus.travel * ROLL));

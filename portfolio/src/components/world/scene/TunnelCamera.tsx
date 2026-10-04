@@ -8,6 +8,7 @@ import { motionState } from "@/lib/world/motion";
 import { getScrollY } from "@/lib/scroll-state";
 import {
   WORLD_FOV,
+  baseFovFor,
   damp,
   dampPose,
   fovKick,
@@ -125,7 +126,7 @@ export function TunnelCamera({ sections, shared, host }: { sections: RefObject<S
       cam.quaternion.multiply(tmp.qe);
     }
 
-    const wantFov = WORLD_FOV + fov;
+    const wantFov = baseFovFor(state.size.width / Math.max(1, state.size.height)) + fov; // the lens widens on a portrait screen
     if (Math.abs(wantFov - s.lastFov) > 0.004) {
       cam.fov = wantFov;
       cam.updateProjectionMatrix();

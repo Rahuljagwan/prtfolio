@@ -56,8 +56,8 @@ function FilterChip({ active, children, onClick }: { active: boolean; children: 
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-        active ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-muted/60 text-muted-foreground hover:border-primary/30 hover:text-foreground",
+        "shrink-0 rounded-full border px-3.5 py-1.5 text-[0.8125rem] font-medium leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        active ? "border-primary/60 bg-primary/12 text-primary" : "border-foreground/15 bg-background/60 text-foreground/80 hover:border-primary/40 hover:text-foreground",
       )}
     >
       {children}
@@ -154,8 +154,8 @@ export function ProjectsClient({ projects }: { projects: Project[] }) {
               {(Object.keys(GROUP_LABEL) as FilterGroup[]).map(
                 (g) =>
                   options[g].length > 0 && (
-                    <div key={g} className="thin-scroll -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:p-0">
-                      <span className="mr-1 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{GROUP_LABEL[g]}</span>
+                    <div key={g} className="thin-scroll -mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:p-0">
+                      <span className="mr-1.5 shrink-0 font-mono text-xs font-medium uppercase tracking-wider text-foreground/75">{GROUP_LABEL[g]}</span>
                       {(options[g] as string[]).map((v) => (
                         <FilterChip key={v} active={filters[g].includes(v)} onClick={() => toggle(g, v)}>
                           {g === "status" ? v.replace("-", " ") : v}
@@ -165,13 +165,13 @@ export function ProjectsClient({ projects }: { projects: Project[] }) {
                   ),
               )}
               {filtering && (
-                <button type="button" onClick={() => setFilters(NO_FILTERS)} className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
+                <button type="button" onClick={() => setFilters(NO_FILTERS)} className="inline-flex items-center gap-1 text-[0.8125rem] font-medium text-foreground/75 transition-colors hover:text-foreground">
                   <X size={12} aria-hidden /> Clear
                 </button>
               )}
             </div>
           )}
-          <p aria-live="polite" className="mt-4 text-xs text-muted-foreground">
+          <p aria-live="polite" className="mt-4 text-[0.8125rem] font-medium text-foreground/75">
             {filtering ? `Showing ${shown.length} of ${projects.length} projects` : `${projects.length} projects`}
           </p>
         </div>

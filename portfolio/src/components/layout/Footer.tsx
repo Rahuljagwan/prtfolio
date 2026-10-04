@@ -9,7 +9,7 @@ export function Footer() {
     <footer className="site-footer relative border-t border-border py-8">
       <div className="container flex flex-col gap-5 text-sm text-muted-foreground">
         <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
-          <p>&copy; {new Date().getFullYear()} Rahul. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Rahul Jagwan. All rights reserved.</p>
           <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             <Link href="/engineering" prefetch={false} className="transition-colors hover:text-foreground">
               Engineering

@@ -23,7 +23,7 @@ export function generateMetadata({ params }: Params): Metadata {
   const n = NOTES.find((x) => x.slug === params.slug);
   if (!n) return { title: "Note not found" };
   return {
-    title: `${n.title} | Rahul`,
+    title: `${n.title} | Rahul Jagwan`,
     description: n.summary,
     robots: n.sample ? { index: false, follow: true } : undefined,
   };

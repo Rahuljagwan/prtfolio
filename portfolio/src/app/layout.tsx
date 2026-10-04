@@ -20,8 +20,8 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   // Only when NEXT_PUBLIC_SITE_URL is set (see lib/site.ts): social-image and canonical URLs need an absolute origin.
   ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
-  title: "Rahul | Full-Stack Developer",
-  description: "Full-stack developer (Flask, React) building and operating production systems, moving into DevOps.",
+  title: "Rahul Jagwan | Software Engineer",
+  description: "Software Engineer at SBFC Finance Limited building full stack and backend web applications with Python, Flask, Node.js and React, deployed on Linux.",
 };
 
 export const viewport: Viewport = {
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <noscript>
-          <style>{".reveal{opacity:1!important;transform:none!important}.mask-in,.chapter-rule{transform:none!important}"}</style>
+          <style>{".reveal{opacity:1!important;transform:none!important}.mask-in,.chapter-rule,.jr-rule,.jr-route-line,.jr-route-rail::before,.jr-route-rail::after{transform:none!important}.jr-num{opacity:1!important;transform:none!important}"}</style>
         </noscript>
         <Background />
         <ThemeProvider>

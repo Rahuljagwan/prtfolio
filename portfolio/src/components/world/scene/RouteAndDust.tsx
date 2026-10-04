@@ -10,7 +10,7 @@ import { ambientInvalidate } from "./ambient";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
 
-const ROUTE_DROP = 1.3; // how far below the camera path the route line/tube/flow all sit -- must match every zone's own use of this same offset
+export const ROUTE_DROP = 1.3; // how far below the camera path the route line/tube/flow all sit -- must match every zone's own use of this same offset
 
 const ROUTE_HERO_STRENGTH = 0.28; // fraction of full route brightness while the hero copy is on screen
 /** Route brightness multiplier for the camera's current u: quiet at the hero, full by roughly the Gate. */

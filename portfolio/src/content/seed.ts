@@ -1,29 +1,33 @@
 import type { Portfolio } from "@/lib/types";
 
-// Seed content. Stage 3 moves this into Postgres; until then it is the only place content lives.
+// Seed content: the fallback the site shows when the database is unreachable, and what `npm run db:seed` and `npm run db:sync-content` load.
 export const seed: Portfolio = {
+  // Everything below is taken from the resume (protflio_bkp/resume/resume.html). The wording follows it; nothing is invented. Where the resume
+  // is silent (dates for certifications, the period of the freelance work) the text says so with a neutral label instead of a guess.
   profile: {
-    name: "Rahul",
-    role: "Full-Stack Developer",
-    headline: "I build and run production web systems, and I am growing into DevOps.",
-    location: "Delhi, India",
-    availability: "Open to new opportunities",
+    name: "Rahul Jagwan",
+    role: "Software Engineer",
+    headline: "I build full stack and backend web applications, from development to deployment.",
+    location: "Mumbai, India",
+    availability: "Open to backend, full stack and DevOps roles",
     bio: [
-      "I am a full-stack developer working with Flask and React. My day-to-day is building business applications for an enterprise finance company and keeping them running in production.",
-      "That means I care about the whole path: clean APIs, a usable interface, a safe deployment, and knowing what to do when something breaks at an inconvenient hour. I am now moving deeper into DevOps, with a focus on Linux, AWS and repeatable deployments.",
+      "I am a Software Engineer at SBFC Finance Limited, building internal enterprise web applications from development to deployment. I work across React frontends, Flask and Node.js backends, MySQL and PostgreSQL databases, and Linux server hosting with Nginx.",
+      "I have practical experience with role-based access control, approval workflows, scheduled background jobs, secure session handling and automated testing. I am looking for backend, full stack or DevOps-oriented software engineering roles.",
     ],
     facts: [
-      { label: "Based in", value: "Delhi, India" },
-      { label: "Focus", value: "Full-stack, moving into DevOps" },
-      { label: "Core stack", value: "Flask, React, PostgreSQL, AWS" },
+      { label: "Based in", value: "Mumbai, Maharashtra, India" },
+      { label: "Working at", value: "SBFC Finance Limited" },
+      { label: "Focus", value: "Full stack and backend, with Linux deployment" },
+      { label: "Core stack", value: "Python, Flask, Node.js, React" },
     ],
     highlights: [
-      { title: "Production experience", text: "Systems used daily by real teams, not demo apps." },
-      { title: "Deployment ownership", text: "Nginx, Gunicorn and AWS EC2 set up and maintained end to end." },
-      { title: "Calm under incidents", text: "Practised at tracing a failure to its cause and restoring service." },
+      { title: "Built end to end", text: "Internal enterprise applications taken from development to deployment: React, Flask or Node.js, and Linux with Nginx." },
+      { title: "Secure by design", text: "Role-based access, session timeouts, account lockout and rate limiting, and security review findings (XSS, CSRF, IDOR) closed." },
+      { title: "Tested and documented", text: "Playwright and pytest coverage, SIT and UAT support, and handover and rollback documentation." },
     ],
   },
 
+  // The resume's own contact line is placeholders (phone, email, LinkedIn, GitHub), so these stay placeholders until real ones are entered in /admin.
   contacts: [
     { type: "email", value: "rahul@example.com" },
     { type: "phone", value: "+91-XXXXXXXXXX" },
@@ -36,16 +40,16 @@ export const seed: Portfolio = {
     {
       id: "exp-1",
       role: "Software Engineer",
-      organisation: "Enterprise NBFC / Fintech",
+      organisation: "SBFC Finance Limited",
       period: "Dec 2025 – Present",
-      location: "India",
+      location: "Mumbai, Maharashtra, India (On-site, Full-time)",
       bullets: [
-        "Build and maintain full-stack internal applications for finance and operations teams, from database design to the user interface.",
-        "Deploy and host applications on AWS EC2 with Gunicorn and an Nginx reverse proxy, including configuration and performance tuning.",
-        "Handle production incidents: investigate logs, find the root cause and restore service, then document the fix.",
-        "Add role-based access control, session security and scheduled background jobs to keep systems safe and dependable.",
+        "Develop and maintain full stack web applications across frontend and backend systems to support business requirements, including asset management, compliance training, legal notice management and branch operations.",
+        "Manage application deployment, server hosting, configuration and performance optimization using Linux, Nginx, PM2, Gunicorn, systemd, cron jobs, WebSockets, PWA features, secure remote server management and Amazon S3.",
+        "Implement role-based access control, session timeouts, account lockout, password policies and rate limiting, and work on closing security review findings such as XSS, CSRF and insecure direct object references.",
+        "Contribute to testing, debugging, troubleshooting and improving application stability and reliability using Playwright and pytest; support SIT and UAT cycles and prepare handover and rollback documentation.",
       ],
-      stack: ["Flask", "React", "PostgreSQL", "Nginx", "AWS EC2", "Linux"],
+      stack: ["Flask", "Node.js", "React", "MySQL", "PostgreSQL", "Linux", "Nginx", "Gunicorn", "PM2", "systemd", "Amazon S3", "Playwright", "pytest"],
     },
   ],
 
@@ -180,66 +184,97 @@ export const seed: Portfolio = {
     },
   ],
 
+  // The resume's Technical Skills, in its own words. Ordered the way the Skills section reads them: from what people see (the frontend) down to
+  // where it runs (cloud and devops), then what cuts across all of it (testing and security, the languages, the working practices).
   skillGroups: [
-    { id: "sg-1", name: "Frontend", skills: ["React", "JavaScript", "HTML & CSS", "Tailwind CSS"] },
-    { id: "sg-2", name: "Backend", skills: ["Python", "Flask", "REST APIs", "PostgreSQL"] },
-    { id: "sg-3", name: "DevOps & Cloud", skills: ["Docker", "AWS (EC2)", "Nginx", "Linux", "Git", "CI/CD"] },
+    { id: "sg-1", name: "Frontend", skills: ["React.js", "Next.js", "Redux Toolkit", "RTK Query", "HTML5", "CSS3", "Bootstrap", "Tailwind CSS", "Material UI", "Shadcn", "Progressive Web Apps (PWA)"] },
+    { id: "sg-2", name: "Backend", skills: ["Flask", "Node.js", "Express.js", "REST APIs", "WebSockets", "JWT authentication", "Role-Based Access Control (RBAC)", "SQLAlchemy", "Swagger / OpenAPI", "Strapi"] },
+    { id: "sg-3", name: "Databases", skills: ["MySQL", "PostgreSQL", "MongoDB", "Redis", "Firebase"] },
+    { id: "sg-4", name: "Cloud & DevOps", skills: ["Linux", "Nginx", "Gunicorn", "PM2", "systemd", "Docker", "Docker Compose", "Git", "GitHub", "Cron Jobs", "Amazon S3", "AWS Bedrock", "Server configuration and deployment"] },
+    { id: "sg-5", name: "Testing & Security", skills: ["Playwright", "pytest", "Postman", "Debugging and troubleshooting", "Session management", "Rate limiting", "XSS / CSRF / IDOR remediation", "VAPT findings closure"] },
+    { id: "sg-6", name: "Languages", skills: ["Python", "JavaScript (ES6+)", "TypeScript", "Java", "C++", "SQL"] },
+    { id: "sg-7", name: "Practices", skills: ["SDLC", "Agile collaboration", "SIT / UAT support", "Technical documentation", "Cross-functional teamwork"] },
   ],
+
+  // The degree, then the resume's Certifications. The resume gives the degree years and the CGPA, and no dates for the certifications.
   education: [
     {
       id: "edu-1",
-      degree: "Bachelor of Engineering, Computer Science",
-      institution: "Universal College of Engineering",
+      degree: "Bachelor of Engineering in Computer Science",
+      institution: "Universal College of Engineering, Mumbai",
       period: "2021 – 2025",
-      description: "Core computer science coursework with a focus on software development, databases and web technologies. CGPA 8.7.",
+      description: "CGPA: 8.7.",
+    },
+    {
+      id: "edu-2",
+      degree: "Software Engineering Job Simulation",
+      institution: "J.P. Morgan (virtual internship)",
+      period: "Certification",
+      description: null,
+    },
+    {
+      id: "edu-3",
+      degree: "Advanced Software Engineering Job Simulation",
+      institution: "Walmart (virtual internship)",
+      period: "Certification",
+      description: null,
+    },
+    {
+      id: "edu-4",
+      degree: "Courses and training",
+      institution: "Udemy and Code Unnati",
+      period: "Certification",
+      description: "Complete JavaScript (Udemy), Machine Learning (Udemy) and SAP Training (Code Unnati).",
     },
   ],
 
+  // The path is told from the resume's own timeline: the degree, the job simulations and courses, the freelance projects, the current role,
+  // and the roles it is looking for next.
   journey: {
-    heading: "From building features to running systems.",
+    heading: "From full stack projects to production systems.",
     story: [
-      "I started as a full-stack developer, writing Flask APIs and React interfaces for business applications. The work felt complete when the feature worked on my machine.",
-      "Then those applications went into production, and the questions changed. How does it get deployed safely? What happens when it fails at night? Can the next release be one command instead of an afternoon? Answering those pulled me toward Linux, Docker, AWS and CI/CD, and I have been building that side of the craft ever since.",
+      "I studied Computer Science at Universal College of Engineering in Mumbai, and I built freelance projects in the MERN stack: a Goods Management module for a logistics platform, a role-based dashboard for shop owners and a CVE management dashboard.",
+      "Since December 2025 I have been a Software Engineer at SBFC Finance Limited, where the work goes all the way to production: Flask and Node.js backends, React frontends, and hosting on Linux with Nginx, Gunicorn, PM2 and systemd, along with role-based access, scheduled jobs, security review fixes and automated tests. I am now looking for backend, full stack or DevOps-oriented software engineering roles.",
     ],
     milestones: [
       {
         id: "ms-1",
-        title: "Full-stack foundations",
-        period: "Where it started",
-        description: "Built web applications end to end with Flask and React, designing REST APIs and PostgreSQL schemas.",
-        tags: ["Flask", "React", "PostgreSQL"],
+        title: "Computer science foundations",
+        period: "2021 – 2025",
+        description: "Bachelor of Engineering in Computer Science at Universal College of Engineering, Mumbai, with a CGPA of 8.7.",
+        tags: [],
         status: "done",
       },
       {
         id: "ms-2",
-        title: "First production deployments",
-        period: "Going live",
-        description: "Moved applications onto AWS EC2 behind Gunicorn and an Nginx reverse proxy, and learned what real traffic does to assumptions.",
-        tags: ["AWS EC2", "Nginx", "Gunicorn"],
+        title: "Job simulations and courses",
+        period: "Certifications",
+        description: "Completed the Software Engineering job simulation with J.P. Morgan and the Advanced Software Engineering job simulation with Walmart (both virtual internships), plus Udemy courses in JavaScript and Machine Learning and SAP training with Code Unnati.",
+        tags: ["J.P. Morgan", "Walmart", "Udemy"],
         status: "done",
       },
       {
         id: "ms-3",
-        title: "Owning operations",
-        period: "Keeping it running",
-        description: "Took on Linux server management, log investigation and incident response, restoring service and documenting the fix.",
-        tags: ["Linux", "systemd", "Incident response"],
+        title: "Freelance full stack projects",
+        period: "Freelance",
+        description: "Built DellCube (goods management for a logistics platform), JMD (a dashboard for shop owners) and CVEarity (CVE management) on the MERN stack with Redux Toolkit and RTK Query.",
+        tags: ["MongoDB", "Express", "React", "Node.js", "Redux Toolkit"],
         status: "done",
       },
       {
         id: "ms-4",
-        title: "Automating the path to production",
-        period: "Now",
-        description: "Packaging services with Docker and replacing manual release steps with repeatable CI/CD pipelines.",
-        tags: ["Docker", "CI/CD", "AWS"],
+        title: "Software Engineer at SBFC Finance Limited",
+        period: "Dec 2025 – Present",
+        description: "Building internal enterprise web applications from development to deployment, across asset management, compliance training, legal notice management and branch operations.",
+        tags: ["Flask", "Node.js", "React", "MySQL", "PostgreSQL"],
         status: "current",
       },
       {
         id: "ms-5",
-        title: "Deeper cloud and observability",
+        title: "Backend, full stack and DevOps roles",
         period: "Next",
-        description: "Going further on AWS and on monitoring, so problems are caught before users notice them.",
-        tags: ["AWS", "Monitoring"],
+        description: "Looking for backend, full stack or DevOps-oriented software engineering roles.",
+        tags: [],
         status: "next",
       },
     ],

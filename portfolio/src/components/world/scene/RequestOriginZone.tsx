@@ -58,6 +58,14 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
   const shell = useRef<THREE.Mesh>(null);
   const cloud = useRef<THREE.Points>(null);
   const pointer = useRef({ x: 0, y: 0 });
+  // The node is placed on its first frame (it used to start at a fixed x and ease across), and the HUD labels are held back for
+  // their first few frames, until drei's Html has projected them: both were visible as a circle that settled into place on load.
+  const placed = useRef(false);
+  const frames = useRef(0);
+  // Below lg the lightweight orb is in the flow of the hero text (data-orb-anchor, see OriginOrb): the 3D node is placed over it, at the
+  // same place and size, so there is no gap where it was and no jump when the 3D takes over. Measured once the page has settled, and
+  // again whenever its shape may have changed. x is a viewport position, y a document position (the node belongs to the hero at the top).
+  const anchor = useRef({ active: false, x: 0, y: 0, d: 0 });
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const invalidate = useThree((s) => s.invalidate);
 
@@ -92,6 +100,38 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
     ringMat.dispose();
     ringGeo.dispose();
   }, [ringMat, ringGeo]);
+
+  useEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const el = document.querySelector<HTMLElement>("[data-orb-anchor]");
+      const r = el?.getBoundingClientRect();
+      const a = anchor.current;
+      if (!el || !r || r.width < 8) {
+        a.active = false; // wide screens: the orb is beside the text and the node uses its own placement
+        return;
+      }
+      a.active = true;
+      a.x = r.left + r.width / 2;
+      a.y = r.top + window.scrollY + r.height / 2;
+      a.d = r.width;
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("load", schedule);
+    void document.fonts?.ready.then(schedule);
+    const timers = [300, 1200, 3000].map((ms) => window.setTimeout(schedule, ms));
+    return () => {
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("load", schedule);
+      timers.forEach(clearTimeout);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -184,14 +224,41 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
     return out;
   };
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
+    frames.current += 1;
     const g = group.current;
+    const a = anchor.current;
     if (g) {
-      // Sit to the right of the headline: a fixed fraction of the visible half-width at the node's distance.
-      const halfWidth = Math.tan((camera.fov * Math.PI) / 360) * 8 * camera.aspect;
-      const targetX = Math.min(2.9, halfWidth * 0.52);
-      g.position.x += (targetX - g.position.x) * Math.min(1, dt * 4);
+      let targetX: number;
+      let targetY = 0.1;
+      let targetScale = 0.85;
+      if (a.active) {
+        // Over the in-flow orb: its centre on screen, mapped onto the plane the node lives on (8 units from the hero camera, which looks
+        // straight at it), and its size matched (the hexagon is 92% of the orb's box; the node's shell is 2.58 units across at scale 0.85).
+        const { width, height } = state.size;
+        const halfH = Math.tan((camera.fov * Math.PI) / 360) * 8;
+        targetX = (a.x / width * 2 - 1) * halfH * camera.aspect;
+        targetY = (1 - (a.y / height) * 2) * halfH;
+        targetScale = (0.85 * ((0.92 * a.d) / height) * 2 * halfH) / 2.58;
+      } else {
+        // Sit to the right of the headline: a fixed fraction of the visible half-width at the node's distance. The same placement
+        // is written in CSS for the lightweight orb (.origin-orb-wide in globals.css), so the hand-over between the two is seamless:
+        // keep the two in step.
+        const halfWidth = Math.tan((camera.fov * Math.PI) / 360) * 8 * camera.aspect;
+        targetX = Math.min(2.9, halfWidth * 0.52);
+      }
+      if (!placed.current) {
+        g.position.x = targetX;
+        g.position.y = targetY;
+        g.scale.setScalar(targetScale);
+        placed.current = true;
+      } else {
+        const k = Math.min(1, dt * 4);
+        g.position.x += (targetX - g.position.x) * k;
+        g.position.y += (targetY - g.position.y) * k;
+        g.scale.setScalar(g.scale.x + (targetScale - g.scale.x) * k);
+      }
 
       // Pointer parallax only matters while this zone is the one on screen.
       const weight = Math.max(0, 1 - shared.current.u * 2);
@@ -201,7 +268,8 @@ export function RequestOriginZone({ palette, curves, shared }: RequestOriginZone
 
     // HUD labels: fade with the same "is this zone actually the one on screen" curve as the pointer parallax above,
     // so they're gone well before the camera reaches the Gate -- introducing the metaphor, not narrating the whole trip.
-    const labelOpacity = clamp01(1 - shared.current.u * 2.2).toFixed(3);
+    // On a narrow screen the labels would run into the copy, and the orb sits where the hero text already says what it is: no labels.
+    const labelOpacity = frames.current < 4 || a.active ? "0" : clamp01(1 - shared.current.u * 2.2).toFixed(3);
     if (originLabelRef.current) originLabelRef.current.style.opacity = labelOpacity;
     if (pathLabelRef.current) pathLabelRef.current.style.opacity = labelOpacity;
     if (core.current) {

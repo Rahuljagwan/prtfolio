@@ -40,7 +40,7 @@ export const NODES: ArchNode[] = [
     y: 40,
     summary: "A visitor receives server-rendered HTML, so the text, the navigation and search engines never wait for JavaScript.",
     decision:
-      "The 3D world is an enhancement, not the page. It is only fetched when a strict check passes: not reduced-motion, not a touch device, a viewport of 900 px or wider, no data-saver, and at least 4 GB of memory and 4 CPU cores where the browser reports them. Everyone else gets the complete static page.",
+      "The 3D world is an enhancement, not the page. It is only fetched after the page has loaded, and only when the visitor's own settings allow it: not reduced-motion and not data-saver. Desktops get the full scene; phones, tablets and modest machines get the same world on a lighter budget (fewer particles, a lower pixel ratio, a camera lens and a few compositions adapted to a tall screen). Anyone who opts out, or whose browser cannot make a WebGL context, gets the complete static page.",
     refs: ["src/lib/world/capability.ts", "src/components/world/WorldCanvas.tsx"],
   },
   {

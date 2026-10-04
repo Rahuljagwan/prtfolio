@@ -7,6 +7,7 @@ import { useActiveSection } from "@/hooks/useActiveSection";
 import { SECTIONS } from "@/content/sections";
 import { cn } from "@/lib/utils";
 import { AssistantLink } from "@/components/ui/AssistantLink";
+import { SoundToggle } from "@/components/audio/SoundToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import { OPEN_PALETTE_EVENT } from "./CommandPalette";
 
@@ -86,6 +87,7 @@ export function Navbar() {
           <ChevronDown size={14} className={cn("transition-transform", open && "rotate-180")} />
         </button>
 
+        <SoundToggle />
         <ThemeToggle />
 
         <AnimatePresence>

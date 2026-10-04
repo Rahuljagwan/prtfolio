@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BoxGeometry, BufferAttribute, BufferGeometry, Euler, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
+import { BoxGeometry, BufferAttribute, BufferGeometry, Euler, type InstancedMesh, Matrix4, OctahedronGeometry, Quaternion, Vector3 } from "three";
 import type * as THREE from "three";
 import type { RigCurves } from "@/lib/world/rig-path";
 import { stationsState } from "@/lib/world/stations";
 import { ZONES } from "@/lib/world/zones";
+import { ambientInvalidate } from "./ambient";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
 
@@ -35,6 +36,8 @@ interface Layout {
   lights: Matrix4[]; // one status light per slab
   edges: BufferGeometry;
   links: BufferGeometry;
+  /** Each tether's two ends (the route line, the card), for the couriers that run along them. */
+  tethers: [Vector3, Vector3][];
 }
 
 /**
@@ -48,6 +51,7 @@ function buildLayout(curves: RigCurves): Layout {
   const lights: Matrix4[] = [];
   const edgePts: number[] = [];
   const linkPts: number[] = [];
+  const tethers: [Vector3, Vector3][] = [];
   const v = new Vector3();
 
   const deployU = ZONES.findIndex((z) => z.id === "deployments");
@@ -83,16 +87,18 @@ function buildLayout(curves: RigCurves): Layout {
     }
     // Hairline back to the pipeline, ending on the route line itself.
     linkPts.push(pos.x, pos.y, pos.z, p.x, p.y - ROUTE_DROP, p.z);
+    tethers.push([new Vector3(p.x, p.y - ROUTE_DROP, p.z), pos.clone()]);
   }
 
   const mk = (a: number[]) => new BufferGeometry().setAttribute("position", new BufferAttribute(new Float32Array(a), 3));
-  return { slabs, bars, lights, edges: mk(edgePts), links: mk(linkPts) };
+  return { slabs, bars, lights, edges: mk(edgePts), links: mk(linkPts), tethers };
 }
 
 type Mats = {
   solid?: THREE.MeshStandardMaterial;
   bars?: THREE.MeshBasicMaterial;
   lights?: THREE.MeshBasicMaterial;
+  couriers?: THREE.MeshBasicMaterial;
   edges?: THREE.LineBasicMaterial;
   links?: THREE.LineBasicMaterial;
 };
@@ -113,11 +119,14 @@ export function DeploymentsZone({ palette, dark, curves, shared }: { palette: Wo
   const slabMesh = useRef<InstancedMesh>(null);
   const barMesh = useRef<InstancedMesh>(null);
   const lightMesh = useRef<InstancedMesh>(null);
+  const courierMesh = useRef<InstancedMesh>(null);
   const mats = useRef<Mats>({});
   const fade = useRef(-1);
 
   const layout = useMemo(() => buildLayout(curves), [curves]);
   const box = useMemo(() => new BoxGeometry(1, 1, 1), []);
+  const courierGeo = useMemo(() => new OctahedronGeometry(1, 0), []);
+  const courierTmp = useMemo(() => ({ m: new Matrix4(), q: new Quaternion(), p: new Vector3(), s: new Vector3() }), []);
 
   useEffect(() => {
     fill(slabMesh.current, layout.slabs);
@@ -130,6 +139,7 @@ export function DeploymentsZone({ palette, dark, curves, shared }: { palette: Wo
     M.solid?.color.set(dark ? "#171a36" : "#fdfbf6");
     M.bars?.color.set(palette.primary);
     M.lights?.color.set(palette.accent);
+    M.couriers?.color.set(dark ? "#d9fff0" : palette.primary);
     M.edges?.color.set(palette.primary);
     M.links?.color.set(palette.route);
     fade.current = -1;
@@ -140,11 +150,12 @@ export function DeploymentsZone({ palette, dark, curves, shared }: { palette: Wo
       layout.edges.dispose();
       layout.links.dispose();
       box.dispose();
+      courierGeo.dispose();
     },
-    [layout, box],
+    [layout, box, courierGeo],
   );
 
-  useFrame(() => {
+  useFrame((state) => {
     const u = shared.current.u;
     const g = root.current;
     if (!g) return;
@@ -165,6 +176,25 @@ export function DeploymentsZone({ palette, dark, curves, shared }: { palette: Wo
       if (M.lights) M.lights.opacity = f;
       if (M.edges) M.edges.opacity = 0.9 * f;
       if (M.links) M.links.opacity = 0.35 * f;
+      if (M.couriers) M.couriers.opacity = 0.95 * f;
+    }
+
+    // Couriers: one small drone per tether, gliding from the route out to its card and back, each on its own beat, easing at both ends
+    // so it seems to stop, hand over and return. They travel along the hairline itself, so they cannot meet anything the hairline does not.
+    const cm = courierMesh.current;
+    if (cm && f > 0.02) {
+      const t = state.clock.elapsedTime;
+      const { m, q, p, s } = courierTmp;
+      layout.tethers.forEach(([from, to], i) => {
+        const beat = t / (7 + (i % 5) * 0.9) + i * 0.37;
+        const e = 0.5 - 0.5 * Math.cos(beat * Math.PI * 2); // 0 at the route, 1 at the card, smooth both ways
+        p.lerpVectors(from, to, e);
+        const pulse = 0.1 + 0.025 * Math.sin(t * 4 + i); // a gentle breathing, so it reads as a lit drone and not a dot
+        m.compose(p, q, s.set(pulse, pulse * 1.35, pulse));
+        cm.setMatrixAt(i, m);
+      });
+      cm.instanceMatrix.needsUpdate = true;
+      ambientInvalidate(state.invalidate);
     }
   });
 
@@ -187,6 +217,9 @@ export function DeploymentsZone({ palette, dark, curves, shared }: { palette: Wo
       <lineSegments geometry={layout.links} frustumCulled={false}>
         <lineBasicMaterial ref={bind("links")} transparent opacity={0} depthWrite={false} />
       </lineSegments>
+      <instancedMesh ref={courierMesh} args={[courierGeo, undefined, SLABS]} frustumCulled={false}>
+        <meshBasicMaterial ref={bind("couriers")} transparent opacity={0} depthWrite={false} />
+      </instancedMesh>
     </group>
   );
 }

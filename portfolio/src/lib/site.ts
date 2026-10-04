@@ -15,4 +15,4 @@ export const SITE_URL: string | undefined = (() => {
   }
 })();
 
-export const SITE_NAME = "Rahul | Full-Stack Developer";
+export const SITE_NAME = "Rahul Jagwan | Software Engineer";

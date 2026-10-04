@@ -312,8 +312,70 @@ html.theme-fading *::after {
   }
 }
 
+/* Wide-screen orb: exactly where the 3D origin node is drawn (RequestOriginZone.tsx), so when the world takes over there is no jump.
+   The node sits min(2.9 units, 52% of the half-width) right of centre at 8 units from a 42-degree lens, which in screen terms is
+   min(47.22vh, 26% of the width) right of centre; its centre is 1.63% of the height above the middle. Change one, change the other. */
+.origin-orb-wide {
+  left: calc(50% + min(47.22vh, 26%));
+  top: calc(50vh - 1.63vh);
+  transform: translate(-50%, -50%);
+}
+
+/* The sound switch's "on" state: three bars moving like a level meter. */
+.sound-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.sound-bars i {
+  display: block;
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: sound-bar 1s ease-in-out infinite;
+}
+.sound-bars i:nth-child(1) {
+  animation-delay: -0.2s;
+}
+.sound-bars i:nth-child(2) {
+  animation-delay: -0.55s;
+}
+.sound-bars i:nth-child(3) {
+  animation-delay: -0.9s;
+}
+@keyframes sound-bar {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sound-bars i {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
+
+/* The canvas host: the full screen, fixed behind the page. On a phone the browser's address bar slides away as you scroll, which changes the
+   viewport height (100vh stays put, 100dvh follows it). Sizing to the large viewport (100lvh) means the canvas never resizes while you
+   scroll, so the scene does not rebuild its buffers and flicker. Where lvh is unknown it falls back to 100vh. */
+.world-host {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 100vh;
+  height: 100lvh;
+}
+
 /* The persistent 3D world (components/world) replaces the static hero decoration once it is showing.
-   Phones, reduced-motion users and browsers without WebGL never get data-world="ready", so they keep this fallback. */
+   Reduced-motion and data-saver visitors, and browsers without WebGL, never get data-world="ready", so they keep this fallback. */
 html[data-world="ready"] .hero-fallback {
   opacity: 0;
   /* Once faded out it is taken out of rendering altogether (large blurred, animated shapes that nobody can see are not free). */
@@ -561,6 +623,12 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   font-size: 11.5px;
   color: hsl(var(--foreground) / 0.66);
 }
+/* On a tall narrow screen the schematic's small captions would run off its edges: keep the names, drop the sub-lines. */
+@media (max-aspect-ratio: 1/1) {
+  .ex-tag__sub {
+    display: none;
+  }
+}
 
 /* The tunnel run (TunnelCamera.tsx): while the page is moving fast the edges of the world darken toward the page colour, a
    tunnel-vision cue. --tunnel is 0 to 1, written by the camera; it costs one variable and no layout. */
@@ -656,6 +724,29 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   }
   .veil-strong {
     --veil-a: 0.72;
+  }
+  /* On a phone the copy runs edge to edge over the 3D scene, so every veil is a little denser and fades less far. */
+  @media (max-width: 767px) {
+    .veil {
+      --veil-a: 0.7;
+      --fl: 3rem;
+      --fr: 3rem;
+      --ft: 3rem;
+      --fb: 3rem;
+      --veil-inset: -2rem -1.25rem;
+    }
+    .veil-soft {
+      --veil-a: 0.62;
+    }
+    .veil-strong {
+      --veil-a: 0.82;
+    }
+    .veil-l,
+    .veil-r {
+      --fl: 3rem;
+      --fr: 3rem;
+      --veil-inset: -2rem -1.25rem;
+    }
   }
   /* The big type gets one soft halo of page colour. Body text gets none: blurred shadows on every line of text were the single most
      expensive thing on the page to draw while scrolling (measured: about six times the raster work of the same page without them),
@@ -811,67 +902,209 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
     color: hsl(var(--muted-foreground));
   }
 
-  /* -- Journey: a pipeline down a central spine, stages alternating sides -- */
-  .stage {
-    position: relative;
+  /* -- Journey: "the path into automation" as a ledger of stages. ----------------------------------------------------------
+     A route plate (From -> Now) opens it; below it, a sticky index of the stages beside a column of plates on one drawn spine.
+     Every plate is a real surface (page colour at 84%, a hairline edge, classical corner marks) so its text keeps full contrast
+     over the 3D city in both themes. Motion: plates rise in, the title lifts out of a mask, a numeral and a hairline draw themselves,
+     the spine fills as you scroll and lights each node, and the pointer carries a soft glow across a plate. All of it is transform
+     and opacity, started by the shared Reveal observer. */
+  .jr-route {
     display: grid;
-    grid-template-columns: 2.5rem 1fr;
-    column-gap: 1.1rem;
-    align-items: start;
-  }
-  .stage-when {
-    display: none;
+    gap: 1.5rem;
+    padding: 1.6rem 1.75rem;
+    border: 1px solid hsl(var(--foreground) / 0.14);
+    border-radius: 1.25rem;
+    background: hsl(var(--background) / 0.8);
   }
   @media (min-width: 768px) {
-    .stage {
-      grid-template-columns: 1fr 3.25rem 1fr;
-      column-gap: 2rem;
+    .jr-route {
+      grid-template-columns: minmax(0, 1fr) minmax(8rem, 1.05fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 2.25rem;
+      padding: 1.9rem 2.4rem;
     }
-    .stage-when {
-      display: block;
-      padding-top: 0.55rem;
-    }
-    .stage-l .stage-body {
-      grid-column: 1;
-      grid-row: 1;
+    .jr-route-end--now {
       text-align: right;
-    }
-    .stage-l .stage-node {
-      grid-column: 2;
-      grid-row: 1;
-    }
-    .stage-l .stage-when {
-      grid-column: 3;
-      grid-row: 1;
-    }
-    .stage-r .stage-when {
-      grid-column: 1;
-      grid-row: 1;
-      text-align: right;
-    }
-    .stage-r .stage-node {
-      grid-column: 2;
-      grid-row: 1;
-    }
-    .stage-r .stage-body {
-      grid-column: 3;
-      grid-row: 1;
-    }
-    .stage-l .stage-tags {
-      justify-content: flex-end;
-    }
-    .stage-inline-when {
-      display: none;
     }
   }
-  .stage-node {
+  .jr-route-title {
+    margin-top: 0.4rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  @media (min-width: 768px) {
+    .jr-route-title {
+      font-size: 1.5rem;
+    }
+  }
+  .jr-route-when {
+    margin-top: 0.45rem;
+    font-size: 0.8125rem;
+    color: hsl(var(--foreground) / 0.72);
+  }
+  .jr-route-track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  .jr-route-meta {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: hsl(var(--foreground) / 0.72);
+    white-space: nowrap;
+  }
+  .jr-route-rail {
     position: relative;
-    z-index: 1;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 0.75rem;
+  }
+  .jr-route-rail::before,
+  .jr-route-rail::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 0.65rem;
+    height: 0.65rem;
+    margin-top: -0.325rem;
+    border-radius: 9999px;
+    transform: scale(0);
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+  }
+  .jr-route-rail::before {
+    left: 0;
+    border: 1.5px solid hsl(var(--foreground) / 0.5);
+    background: hsl(var(--background));
+  }
+  .jr-route-rail::after {
+    right: 0;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 5px hsl(var(--primary) / 0.18);
+    transition-delay: 1.2s;
+  }
+  .is-visible .jr-route-rail::before,
+  .is-visible .jr-route-rail::after {
+    transform: none;
+  }
+  .jr-route-line {
+    margin-inline: 0.5rem;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+  }
+  .is-visible .jr-route-line {
+    transform: none;
+  }
+
+  .jr-index {
+    position: sticky;
+    top: 7rem;
+    padding: 1.15rem 1.2rem 1.2rem;
+    border: 1px solid hsl(var(--foreground) / 0.12);
+    border-radius: 1.1rem;
+    background: hsl(var(--background) / 0.74);
+  }
+  .jr-index ol {
+    margin-top: 0.9rem;
+    border-left: 1px solid hsl(var(--foreground) / 0.16);
+  }
+  .jr-index-link {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.1rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.6rem 0 0.6rem 0.95rem;
+    color: hsl(var(--foreground) / 0.66);
+    transition: color 0.3s ease;
+  }
+  .jr-index-link::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 0.45rem;
+    bottom: 0.45rem;
+    width: 2px;
+    border-radius: 2px;
+    background: hsl(var(--primary));
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .jr-index-link[data-active]::before {
+    transform: none;
+  }
+  .jr-index-link:hover,
+  .jr-index-link:focus-visible,
+  .jr-index-link[data-active] {
+    color: hsl(var(--foreground));
+  }
+  .jr-index-link:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 0.4rem;
+  }
+  .jr-index-num {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: hsl(var(--primary));
+  }
+  .jr-index-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+  .jr-index-count {
+    margin-top: 1.1rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    color: hsl(var(--foreground) / 0.66);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .jr-stages {
+    display: grid;
+    gap: 2.25rem;
+  }
+  @media (min-width: 768px) {
+    .jr-stages {
+      gap: 3.25rem;
+    }
+  }
+  .jr-stage {
+    position: relative;
+    padding-left: 3.75rem;
+    scroll-margin-top: 7rem;
+  }
+  /* On a phone the spine hugs the left edge and the plates take the rest of the width. */
+  @media (max-width: 639px) {
+    .jr-stage {
+      padding-left: 3.1rem;
+    }
+    .jr-plate {
+      padding: 1.35rem 1.2rem 1.5rem;
+    }
+    .jr-num {
+      right: 1rem;
+    }
+  }
+  .jr-node {
+    position: absolute;
+    left: 0.25rem;
+    top: 1.5rem;
+    z-index: 2;
     display: grid;
     place-items: center;
     width: 2.25rem;
     height: 2.25rem;
-    margin-inline: auto;
     border-radius: 9999px;
     border: 2px solid hsl(var(--primary));
     background: hsl(var(--background));
@@ -882,29 +1115,210 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
       box-shadow 0.45s ease,
       transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .stage-node.is-active {
+  .jr-node.is-active {
     background: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
     box-shadow: 0 0 0 7px hsl(var(--primary) / 0.16);
     transform: scale(1.08);
   }
-  .stage-node[data-status="current"] {
+  .jr-node[data-status="current"] {
     border-color: hsl(var(--accent));
     color: hsl(var(--accent));
   }
-  .stage-node[data-status="current"].is-active {
+  .jr-node[data-status="current"].is-active {
     background: hsl(var(--accent));
     color: hsl(var(--background));
     box-shadow: 0 0 0 7px hsl(var(--accent) / 0.2);
   }
-  .stage-node[data-status="next"] {
+  .jr-node[data-status="next"] {
     border-style: dashed;
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--foreground) / 0.7);
   }
-  .stage-node[data-status="next"].is-active {
+  .jr-node[data-status="next"].is-active {
     background: hsl(var(--background));
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--foreground) / 0.7);
     box-shadow: none;
+    transform: none;
+  }
+
+  .jr-plate {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 1.6rem 1.5rem 1.8rem;
+    border: 1px solid hsl(var(--foreground) / 0.14);
+    border-radius: 1.25rem;
+    background: hsl(var(--background) / 0.84);
+    transition:
+      border-color 0.35s ease,
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @media (min-width: 768px) {
+    .jr-plate {
+      padding: 2.1rem 2.4rem 2.3rem;
+    }
+  }
+  /* The pointer's glow (--mx / --my are written by SpotlightController for [data-spotlight]). */
+  .jr-plate::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0;
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), hsl(var(--primary) / 0.14), transparent 62%);
+    transition: opacity 0.4s ease;
+  }
+  .jr-plate:hover {
+    border-color: hsl(var(--primary) / 0.45);
+    transform: translateY(-3px);
+    box-shadow: 0 28px 60px -34px hsl(var(--foreground) / 0.5);
+  }
+  .jr-plate:hover::before {
+    opacity: 1;
+  }
+  .jr-plate[data-status="current"] {
+    border-color: hsl(var(--accent) / 0.55);
+  }
+  .jr-plate[data-status="current"]::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, hsl(var(--accent)), transparent 70%);
+  }
+  .jr-plate[data-status="next"] {
+    border-style: dashed;
+  }
+  /* Classical corner marks (the .ticks technique), drawing in toward the plate on hover. */
+  .jr-corners {
+    --tk: 14px;
+    --tc: hsl(var(--primary) / 0.6);
+    position: absolute;
+    inset: 0.65rem;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.6;
+    transition:
+      opacity 0.4s ease,
+      inset 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .jr-plate:hover .jr-corners {
+    opacity: 1;
+    inset: 0.45rem;
+  }
+  .jr-num {
+    position: absolute;
+    top: 0.7rem;
+    right: 1.4rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: clamp(3.25rem, 5.5vw, 5rem);
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px hsl(var(--primary) / 0.42);
+    user-select: none;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+    transition:
+      opacity 0.9s ease 0.3s,
+      transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+  }
+  .is-visible .jr-num {
+    opacity: 1;
+    transform: none;
+  }
+  .jr-plate-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.9rem;
+  }
+  .jr-when {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--foreground) / 0.72);
+  }
+  .jr-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--primary) / 0.55);
+    background: hsl(var(--primary) / 0.09);
+    color: hsl(var(--primary));
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .jr-pill[data-status="current"] {
+    border-color: hsl(var(--accent) / 0.65);
+    background: hsl(var(--accent) / 0.12);
+    color: color-mix(in srgb, hsl(var(--accent)) 70%, hsl(var(--foreground)));
+  }
+  .jr-pill[data-status="next"] {
+    border-style: dashed;
+    border-color: hsl(var(--foreground) / 0.35);
+    background: transparent;
+    color: hsl(var(--foreground) / 0.78);
+  }
+  .jr-title {
+    margin-top: 1.1rem;
+    padding-right: 3.5rem;
+  }
+  @media (min-width: 768px) {
+    .jr-title {
+      padding-right: 6rem;
+    }
+  }
+  .jr-desc {
+    margin-top: 1rem;
+    max-width: 40rem;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: hsl(var(--foreground) / 0.84);
+  }
+  @media (min-width: 768px) {
+    .jr-desc {
+      font-size: 1.0625rem;
+    }
+  }
+  .jr-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.4rem;
+    list-style: none;
+    padding: 0;
+  }
+  .jr-tags li {
+    padding: 0.32rem 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--foreground) / 0.17);
+    background: hsl(var(--muted) / 0.55);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: hsl(var(--foreground) / 0.86);
+    transition: border-color 0.35s ease;
+  }
+  .jr-plate:hover .jr-tags li {
+    border-color: hsl(var(--primary) / 0.4);
+  }
+  .jr-rule {
+    display: block;
+    height: 1px;
+    margin-top: 1.6rem;
+    background: linear-gradient(90deg, hsl(var(--primary) / 0.75), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.45s;
+  }
+  .is-visible .jr-rule {
     transform: none;
   }
   .flow-line {
@@ -1185,6 +1599,37 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   html[data-world="ready"] .world-only {
     display: inline;
   }
+  /* The legend sits over the busiest part of the 3D world, in both themes, so it gets a real surface (not just a feathered veil):
+     a mostly opaque panel in the page colour with a hairline edge, and every line of text in the full foreground colour. It is kept
+     small on purpose (one line of intro, one row of stages): it must sit in the clear space under the 3D orb (which is 42vh across,
+     centred just above the middle of the screen) without ever touching it. No blur: a backdrop filter would re-blur the moving scene
+     behind it on every frame. */
+  .hero-guide {
+    padding: 0.95rem 1.25rem 0.9rem;
+    border: 1px solid hsl(var(--foreground) / 0.14);
+    border-radius: 1rem;
+    background: hsl(var(--background) / 0.84);
+    box-shadow: 0 16px 38px -26px hsl(var(--foreground) / 0.4);
+  }
+  .guide-intro {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: hsl(var(--foreground) / 0.86);
+  }
+  .world-off {
+    display: inline;
+  }
+  html[data-world="ready"] .world-off {
+    display: none;
+  }
+  .guide-status {
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: hsl(var(--foreground) / 0.84);
+  }
+  .guide-status[data-done] {
+    color: hsl(var(--primary));
+  }
   /* On a short screen the route matters more than the sentence above it. */
   @media (max-height: 790px) {
     .hero-guide .guide-intro {
@@ -1194,31 +1639,39 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   .route {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
+    /* On a narrow screen the six stages keep a readable width and scroll sideways inside the panel, rather than shrinking to nothing. */
+    min-width: 28rem;
   }
   .rs {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0 0.15rem 0.5rem;
+    gap: 0.35rem;
+    padding: 0 0.1rem 0.25rem;
     text-align: center;
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--foreground) / 0.82);
     transition: color 0.35s ease;
   }
   .rs:hover,
   .rs:focus-visible {
     color: hsl(var(--foreground));
   }
+  .rs:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 4px;
+    border-radius: 0.5rem;
+  }
   /* The line to the next stage: it fills as the request gets there. */
   .route li:not(:last-child) .rs::after {
     content: "";
     position: absolute;
-    top: 0.32rem;
-    left: calc(50% + 0.6rem);
-    width: calc(100% - 1.2rem);
-    height: 1px;
-    background: hsl(var(--border));
+    top: 0.3rem;
+    left: calc(50% + 0.55rem);
+    width: calc(100% - 1.1rem);
+    height: 1.5px;
+    margin-top: -0.75px;
+    background: hsl(var(--foreground) / 0.3);
     transition: background-color 0.4s ease;
   }
   .rs[data-next="on"]::after {
@@ -1227,10 +1680,10 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   .rs-node {
     position: relative;
     z-index: 1;
-    width: 0.65rem;
-    height: 0.65rem;
+    width: 0.6rem;
+    height: 0.6rem;
     border-radius: 9999px;
-    border: 1px solid hsl(var(--primary) / 0.75);
+    border: 1.5px solid hsl(var(--primary));
     background: hsl(var(--background));
     transition:
       background-color 0.35s ease,
@@ -1238,13 +1691,13 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   }
   .rs-name {
     font-size: 0.78rem;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.2;
     color: hsl(var(--foreground));
   }
   .rs-what {
     font-size: 0.7rem;
-    line-height: 1.25;
+    line-height: 1.3;
   }
   .rs[data-state="active"] .rs-node {
     background: hsl(var(--primary));
@@ -1260,9 +1713,25 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
 
   @media (prefers-reduced-motion: reduce) {
     .mask-in,
-    .chapter-rule {
+    .chapter-rule,
+    .jr-rule,
+    .jr-route-line,
+    .jr-route-rail::before,
+    .jr-route-rail::after {
       transform: none;
       transition: none;
+    }
+    .jr-num {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .jr-plate,
+    .jr-corners {
+      transition: none;
+    }
+    .jr-plate:hover {
+      transform: none;
     }
     .pulse,
     .flow-line::after,

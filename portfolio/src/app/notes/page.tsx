@@ -8,7 +8,7 @@ import { SampleChip } from "@/components/ui/SampleChip";
 import { NOTES } from "@/content/notes";
 
 export const metadata: Metadata = {
-  title: "Notes | Rahul",
+  title: "Notes | Rahul Jagwan",
   description: "Short technical notes.",
   // Every note is an illustrative sample for now, so the index is kept out of search indexing too.
   robots: { index: false, follow: true },

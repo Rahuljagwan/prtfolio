@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/engineering/parts";
 import { SHOW_SAMPLES } from "@/lib/samples";
 
 export const metadata: Metadata = {
-  title: "Engineering | Rahul",
+  title: "Engineering | Rahul Jagwan",
   description: "How this site is built, incident reviews, configuration examples, a learning roadmap and a pipeline simulator.",
 };
 
@@ -16,7 +16,7 @@ const ITEMS: { href: string; title: string; text: string; tag?: "sample" | "simu
   { href: "/engineering/pipeline", title: "Pipeline playground", text: "Push a release through lint, tests, staging and a canary. Break a step and roll back. A simulation of a production pipeline.", tag: "simulation" },
   { href: "/engineering/postmortems", title: "Post-incident reviews", text: "Blameless write-ups: timeline, root cause, fix, what to change. Illustrative examples of the format.", tag: "sample" },
   { href: "/engineering/configs", title: "Config gallery", text: "Sanitised Nginx, systemd and CI configuration with the reasoning annotated line by line.", tag: "sample" },
-  { href: "/engineering/roadmap", title: "Learning roadmap", text: "What is done, in progress and next, on the way from full-stack developer to DevOps.", tag: "real" },
+  { href: "/engineering/roadmap", title: "Learning roadmap", text: "What is done, in progress and next, on the way from software engineer toward DevOps.", tag: "real" },
   { href: "/notes", title: "Notes", text: "Short technical write-ups.", tag: "sample" },
 ];
 

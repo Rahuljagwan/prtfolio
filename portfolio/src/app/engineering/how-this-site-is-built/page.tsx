@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/engineering/parts";
 import { SiteDiagram } from "@/components/engineering/SiteDiagram";
 
 export const metadata: Metadata = {
-  title: "How this site is built | Rahul",
+  title: "How this site is built | Rahul Jagwan",
   description: "The real architecture of this portfolio: static pages, a content layer with a seed fallback, Postgres, a lazy 3D world, and the decision behind each.",
 };
 

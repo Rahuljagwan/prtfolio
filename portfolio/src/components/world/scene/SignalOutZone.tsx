@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BufferAttribute, BufferGeometry, MeshBasicMaterial } from "three";
 import type * as THREE from "three";
+import { worldTier } from "@/lib/world/capability";
 import { BEACON, ZONES } from "@/lib/world/zones";
 import type { WorldPalette } from "./palette";
 import type { RigShared } from "./RigDriver";
@@ -53,7 +54,7 @@ export function SignalOutZone({ palette, shared }: { palette: WorldPalette; dark
 
   const stars = useMemo(() => {
     const rand = rng(91);
-    const n = 900;
+    const n = worldTier() === "lite" ? 450 : 900;
     const a = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
       a[i * 3] = (rand() - 0.5) * 90;
