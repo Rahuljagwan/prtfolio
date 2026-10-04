@@ -6,7 +6,7 @@ import { FooterTools } from "./FooterTools";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border py-8">
+    <footer className="site-footer relative border-t border-border py-8">
       <div className="container flex flex-col gap-5 text-sm text-muted-foreground">
         <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
           <p>&copy; {new Date().getFullYear()} Rahul. All rights reserved.</p>

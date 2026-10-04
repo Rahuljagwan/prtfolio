@@ -3,9 +3,9 @@ import { AssistantLink } from "@/components/ui/AssistantLink";
 import { ButtonLink, buttonStyles } from "@/components/ui/Button";
 import { Magnetic } from "@/components/ui/Magnetic";
 import { HeroFallback } from "@/components/hero/HeroFallback";
+import { OriginOrb } from "@/components/hero/OriginOrb";
 import { RequestCounter } from "@/components/hero/RequestCounter";
 import { HeroGuide } from "@/components/hero/HeroGuide";
-import { FallbackNote } from "@/components/hero/FallbackNote";
 import { ResumeMenu } from "@/components/ui/ResumeMenu";
 import { cn } from "@/lib/utils";
 import type { Profile, ResumeInfo } from "@/lib/types";
@@ -50,10 +50,14 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
               one undifferentiated stack of elements at slightly different sizes. */}
           <div style={delay(0.2)} className="mt-6 animate-fade-up border-t border-border/60 pt-6 motion-reduce:animate-none">
             <RequestCounter />
-            <p className="mt-2.5 max-w-md font-mono text-[11px] leading-relaxed text-muted-foreground">
+            {/* Below md, this replaces the caption line: the orb (OriginOrb) shows the same idea directly instead of describing
+                it in a sentence, in the space the caption would have taken. Its wide-screen counterpart sits beside the text
+                (below, a section-level sibling, not nested here -- see OriginOrb's own comment for why). */}
+            <OriginOrb className="relative my-1 flex justify-center md:hidden" />
+            <p className="mt-2.5 hidden max-w-md font-mono text-[11px] leading-relaxed text-muted-foreground md:block">
               The counter is a simulation. The button is real: it sends one test request through every section of this site.
+              {" "}To the right, the lightweight build: the same idea, without the full 3D scene.
             </p>
-            <FallbackNote />
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <Magnetic>
@@ -76,6 +80,10 @@ export function Hero({ profile, resume }: { profile: Profile; resume: ResumeInfo
           </div>
         </div>
       </div>
+
+      {/* The wide-screen counterpart to the inline orb above: same component, positioned against the section itself (like
+          HeroGuide below) rather than nested in the text column, so its containing block is the full hero, not that column. */}
+      <OriginOrb className="absolute right-[6%] top-1/2 hidden -translate-y-1/2 md:block" />
 
       <HeroGuide className="absolute bottom-10 right-[max(1.5rem,4vw)] hidden w-[32rem] animate-fade-up motion-reduce:animate-none xl:block 2xl:w-[35rem]" />
 

@@ -76,14 +76,19 @@ html.lenis body {
   transform: scaleY(0);
 }
 .timeline-dot {
+  /* Pulls the dot back onto the vertical line at x = 0, from wherever the padding-left of its <ol> (Experience.tsx's own
+     gutter) put it: 2rem on phones, 3rem from 768px up. Sized in real pixels (not rem) because .timeline-dot's own
+     width is in px (h-3 w-3 = 12px) and this needs to line up with it exactly, not round with a browser's rem base. */
+  left: calc(-32px - 5.5px);
   transition:
     background-color 0.35s ease,
     transform 0.35s ease,
-    box-shadow 0.35s ease;
+    box-shadow 0.35s ease,
+    left 0.2s ease;
 }
 @media (min-width: 768px) {
   .timeline-dot {
-    left: calc(-3rem - 5.5px);
+    left: calc(-48px - 5.5px);
   }
 }
 .timeline-dot.is-active {
@@ -240,6 +245,71 @@ html.theme-fading *::after {
 }
 ::view-transition-group(project-backdrop) {
   animation-duration: 0.4s;
+}
+
+/* ---- Hero origin orb (OriginOrb.tsx) -----------------------------------------------------------------------------
+   The plain-CSS/SVG stand-in for the hero's 3D "origin node", wherever the 3D world does not run. Two independent
+   spins (shell and inner ring, opposite directions and different periods) read as one turning solid rather than a
+   flat decal; the core breathes gently at rest, and rings itself outward three times when a request is sent
+   (data-sending, set for REQUEST_TRAVEL_SECONDS by OriginOrb.tsx). */
+.orb-shell {
+  animation: orb-spin 32s linear infinite;
+  transform-origin: 50% 50%;
+}
+.orb-ring {
+  animation: orb-spin-rev 21s linear infinite;
+  transform-origin: 50% 50%;
+}
+.orb-core {
+  background: radial-gradient(circle at 35% 30%, hsl(var(--primary) / 0.95), hsl(var(--primary) / 0.55) 55%, hsl(var(--primary) / 0.22) 100%);
+  box-shadow: 0 0 2.5rem hsl(var(--primary) / 0.45);
+  animation: orb-breathe 3.6s ease-in-out infinite;
+}
+.orb-wave {
+  opacity: 0;
+}
+.orb[data-sending] .orb-wave {
+  animation: orb-wave-pulse 1.5s ease-out 3;
+}
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes orb-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes orb-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+@keyframes orb-wave-pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-shell,
+  .orb-ring,
+  .orb-core {
+    animation: none;
+  }
+  .orb[data-sending] .orb-wave {
+    animation: none;
+    opacity: 0.35;
+  }
 }
 
 /* The persistent 3D world (components/world) replaces the static hero decoration once it is showing.
@@ -1099,6 +1169,13 @@ html[data-world="ready"] [data-pod-stage][data-pod="on"] > span {
   }
   .channel:hover .arrow {
     transform: translate(4px, -4px);
+  }
+
+  /* The footer sits at the very end of the route, right where the 3D world (the Signal Out beacon and its connecting lines) is
+     busiest, so its plain status text needs its own backdrop rather than the .veil made for a block of copy mid-page: a solid
+     wash from the top border down, not a cloud that fades on every side. */
+  html[data-world="ready"] .site-footer {
+    background: linear-gradient(180deg, hsl(var(--background) / 0.75), hsl(var(--background) / 0.95) 3rem, hsl(var(--background) / 0.95) 100%);
   }
 
   /* -- Hero guide: a legend for the 3D scene (what the ball is, the six stages of the route) -- */

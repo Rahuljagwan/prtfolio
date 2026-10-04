@@ -9,6 +9,9 @@ const BTN =
 /**
  * Footer buttons for the two site-wide overlays. They only dispatch events: the overlays themselves live in OverlayHost (root
  * layout), so they open the same way from the keyboard, the command palette, the terminal and here, on every page.
+ * The command palette is NOT one of these: unlike the terminal and this drawer, it is only mounted on the home page (it needs
+ * page data - contacts, resume, projects - that the other routes do not have to hand), so a button for it does not belong here;
+ * see Navbar's mobile menu for its one touch entry point, paired with the one page it actually exists on.
  */
 export function FooterTools() {
   return (

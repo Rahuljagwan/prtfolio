@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown, Search, Sparkles } from "lucide-react";
 import { useActiveSection } from "@/hooks/useActiveSection";
 import { SECTIONS } from "@/content/sections";
 import { cn } from "@/lib/utils";
@@ -117,6 +117,20 @@ export function Navbar() {
                 <AssistantLink className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm text-primary">
                   <Sparkles size={14} aria-hidden /> Ask the assistant
                 </AssistantLink>
+              </li>
+              {/* The desktop pill has a "Ctrl K" button (lg:flex, above); this is the equivalent for touch, since Ctrl+K has
+                  no touch equivalent otherwise. Only here, not in the shared footer: the palette is mounted on this page alone. */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    window.dispatchEvent(new Event(OPEN_PALETTE_EVENT));
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-4 py-2.5 text-left text-sm text-muted-foreground"
+                >
+                  <Search size={14} aria-hidden /> Commands
+                </button>
               </li>
             </motion.ul>
           )}
